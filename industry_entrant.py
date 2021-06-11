@@ -29,18 +29,8 @@ def traverse_industry(list, *, level=0):
             traverse_industry(item_childrem, level=level+1)
 
 with open(industry_json_path) as json_file:
-    
     industry_data = json.load(json_file)
     shen_wan_industry_data = industry_data['records'][0]['children']
     level = 0
     traverse_industry(shen_wan_industry_data, level=level)
-    # for industry_item in shen_wan_industry_data:
-    #     pprint(industry_item)
-    # pprint(industry_data['records'][0])
-    # industry_dict = {
-    #     'industry_code': 'S12',
-    #     'industry_name': '房地产',
-    #     'industry_type': 0,
-    #     'p_industry_id': 'S'
-    # }
-    # each_insert.insert_industry_data(industry_dict)
+

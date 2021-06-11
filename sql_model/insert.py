@@ -18,7 +18,7 @@ class StockInsert:
         self.cursor = connect_instance.cursor()
         self.IdWorker = IdWorker()
 
-  def generate_insert_sql(self, target_dict, table_name, ignore_list):
+  def generate_insert_sql(self, target_dict, table_name, ignore_list):  
         keys = 'id,' + ','.join(target_dict.keys())
         values = ','.join(['%s'] * (len(target_dict) + 1))
         update_values = ''
@@ -39,4 +39,12 @@ class StockInsert:
             industry_dict, 'shen_wan_industry', ['id'])
       self.cursor.execute(industry_sql_insert,
                             tuple([snowflaw_id, *industry_dict.values()]))
+      self.connect_instance.commit()
+
+  def insert_stock_industry_data(self, stock_dict):
+      snowflaw_id = self.IdWorker.get_id()
+      stock_sql_insert = self.generate_insert_sql(
+            stock_dict, 'stock_industry', ['id'])
+      self.cursor.execute(stock_sql_insert,
+                            tuple([snowflaw_id, *stock_dict.values()]))
       self.connect_instance.commit()
