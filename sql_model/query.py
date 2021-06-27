@@ -7,14 +7,16 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2021 Camel Lu
 '''
-
+import pymysql
 from db.connect import connect
 
 class StockQuery:
   def __init__(self):
+    #connect_instance = 
     connect_instance = connect()
-    self.connect_instance = connect_instance
-    self.cursor = connect_instance.cursor()
+    self.connect = connect_instance.get('connect')
+    self.cursor = connect_instance.get('cursor')
+    self.dict_cursor = connect_instance.get('dict_cursor')
 
   def query_industry_data(self):
     query_industry_sql = "SELECT a1.industry_name AS '三级行业', a1.industry_code as '三级行业代码', a2.industry_name AS '二级行业',a2.industry_code as '二级行业代码', a3.industry_name AS '一级行业', a3.industry_code as '一级行业代码' FROM shen_wan_industry as a1 \
@@ -23,4 +25,10 @@ class StockQuery:
           WHERE a1.industry_type=2 AND a2.industry_type=1 AND a3.industry_type = 0"
     self.cursor.execute(query_industry_sql)
     results = self.cursor.fetchall()
+    return results
+
+  def query_all_stock(self):
+    query_stock_sql = "SELECT stock_code FROM stock_industry"
+    self.dict_cursor.execute(query_stock_sql)
+    results = self.dict_cursor.fetchall()
     return results
