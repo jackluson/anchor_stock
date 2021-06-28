@@ -27,8 +27,10 @@ class StockQuery:
     results = self.cursor.fetchall()
     return results
 
-  def query_all_stock(self):
-    query_stock_sql = "SELECT stock_code FROM stock_industry"
-    self.dict_cursor.execute(query_stock_sql)
+  def query_all_stock(self, date):
+    query_stock_sql = "SELECT stock_code FROM stock_industry as a WHERE a.stock_code NOT IN ( SELECT b.`code` FROM stock_daily_info AS b WHERE b.`timestamp` = %s )"
+    
+    self.dict_cursor.execute(query_stock_sql, [date])
+    
     results = self.dict_cursor.fetchall()
     return results

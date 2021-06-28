@@ -12,12 +12,11 @@ from stock_info.api import StockApier
 from sql_model.query import StockQuery
 from sql_model.insert import StockInsert
 
-def store_stock_daily():
+def store_stock_daily(target_date=None):
   each_query = StockQuery()
   each_insert = StockInsert()
   each_api = StockApier()
-  all_stock = each_query.query_all_stock()
-  #print("all_stock", all_stock)
+  all_stock = each_query.query_all_stock(target_date)
   for index in range(0,len(all_stock)):
     stock = all_stock[index]
     stock_code = stock.get('stock_code')
@@ -27,7 +26,7 @@ def store_stock_daily():
       symbol = 'SZ' + stock_code
     print("symbol", index, symbol)
     #symbol = 'SH600519'
-    target_date = '2021-06-25'
+
     stock_daily_info_dict = each_api.get_special_stock(symbol,target_date)
     # status = 0 未上市状态
     if stock_daily_info_dict.get('status') == 0:
