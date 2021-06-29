@@ -14,30 +14,30 @@ from stock_info.api import StockApier
 
 
 def store_stock_industry():
-  each_insert = StockInsert()
-  each_query = StockQuery()
-  each_api = StockApier()
+    each_insert = StockInsert()
+    each_query = StockQuery()
+    each_api = StockApier()
 
-  industry_data = each_query.query_industry_data()
-  for item_industry in industry_data:
-      stock_list = each_api.get_stocks_by_industry(item_industry[1])
-      stock_dict = {
-          'industry_code_third': item_industry[1],
-          'industry_name_third': item_industry[0],
-          'industry_code_second': item_industry[3],
-          'industry_name_second': item_industry[2],
-          'industry_code_first': item_industry[5],
-          'industry_name_first': item_industry[4],
-      }
-      if stock_list == None:
-        print('item_industry', item_industry)
-        exit()
-      for item_stock in stock_list:
-        code = item_stock.get('SECCODE')
-        name = item_stock.get('SECNAME')
-        stock_dict['stock_code'] = code
-        stock_dict['stock_name'] = name
-        each_insert.insert_stock_industry_data(stock_dict)
+    industry_data = each_query.query_industry_data()
+    for item_industry in industry_data:
+        stock_list = each_api.get_stocks_by_industry(item_industry[1])
+        stock_dict = {
+            'industry_code_third': item_industry[1],
+            'industry_name_third': item_industry[0],
+            'industry_code_second': item_industry[3],
+            'industry_name_second': item_industry[2],
+            'industry_code_first': item_industry[5],
+            'industry_name_first': item_industry[4],
+        }
+        if stock_list == None:
+            print('item_industry', item_industry)
+            exit()
+        for item_stock in stock_list:
+            code = item_stock.get('SECCODE')
+            name = item_stock.get('SECNAME')
+            stock_dict['stock_code'] = code
+            stock_dict['stock_name'] = name
+            each_insert.insert_stock_industry_data(stock_dict)
 
 if __name__ == '__main__':
     store_stock_industry()
