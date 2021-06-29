@@ -12,6 +12,7 @@ import time
 from controller.store_industry import store_industry
 from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
+from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
 
 def store_stock_industry_and_daily():
     target_date = time.strftime("%Y-%m-%d", time.localtime(time.time()))
@@ -26,6 +27,8 @@ def main():
 
     #store_stock_daily() # 执行股票每天变动信息入库
 
-    store_stock_industry_and_daily() #联合执行
+    #store_stock_industry_and_daily() #联合执行
+
+    store_stock_main_financial_indicator(2) # 入库股票财报关键指标信息
 if __name__ == '__main__':
     main()

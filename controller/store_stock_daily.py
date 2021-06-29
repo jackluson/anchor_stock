@@ -7,27 +7,22 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2021 Camel Lu
 '''
-import re
 from stock_info.api import StockApier
 from sql_model.query import StockQuery
 from sql_model.insert import StockInsert
 
 def store_stock_daily(target_date=None):
+    print("target_date", target_date)
     each_query = StockQuery()
     each_insert = StockInsert()
     each_api = StockApier()
     all_stock = each_query.query_all_stock(target_date)
+    print('len(all_stock)', len(all_stock))
     for index in range(0,len(all_stock)):
         stock = all_stock[index]
         stock_code = stock.get('stock_code')
-        if bool(re.search("^(6|9)\d{5}$", stock_code)):
-            symbol = 'SH' + stock_code
-        else:
-            symbol = 'SZ' + stock_code
-        print("symbol", index, symbol)
-        #symbol = 'SH600519'
-
-        stock_daily_info_dict = each_api.get_special_stock(symbol,target_date)
+        print("stock_code", index, stock_code)
+        stock_daily_info_dict = each_api.get_special_stock(stock_code,target_date)
         # status = 0 未上市状态
         if stock_daily_info_dict.get('status') == 0:
             print("stock_daily_info_dict", stock_daily_info_dict)
