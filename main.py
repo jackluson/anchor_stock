@@ -29,6 +29,6 @@ def main():
 
     #store_stock_industry_and_daily() #联合执行
 
-    store_stock_main_financial_indicator(2) # 入库股票财报关键指标信息
+    store_stock_main_financial_indicator() # 入库股票财报关键指标信息
 if __name__ == '__main__':
     main()
