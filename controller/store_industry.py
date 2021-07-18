@@ -21,7 +21,7 @@ def store_industry():
                 'industry_code': industry_item['SORTCODE'],
                 'industry_name': industry_item['SORTNAME'],
                 'industry_type': level,
-                'p_industry_id': industry_item['PARENTCODE']
+                'p_industry_code': industry_item['PARENTCODE']
             }
             each_insert.insert_industry_data(industry_dict)
             item_childrem = industry_item.get('children')

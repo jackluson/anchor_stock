@@ -53,7 +53,7 @@ class StockApier:
                 return res_json.get('records')
         except:
             raise('中断')
-    
+
     def get_special_stock(self, code, date=None):
         symbol = get_symbol_by_code(code)
         if not date:
@@ -69,6 +69,8 @@ class StockApier:
             try:
                 if res.status_code == 200:
                     res_json = res.json()
+                else:
+                    print('res异常', res)
             except:
                 raise('中断')
         data = res_json['data'].get('quote')
