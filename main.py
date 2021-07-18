@@ -9,6 +9,7 @@ Copyright (c) 2021 Camel Lu
 '''
 import time
 from datetime import datetime
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 from controller.store_industry import store_industry
 from controller.store_stock_industry import store_stock_industry
@@ -20,6 +21,22 @@ def store_stock_industry_and_daily():
     store_stock_industry() # 执行行业股票信息入库
     #target_date = datetime.strptime('2021-07-08','%Y-%m-%d')
     store_stock_daily() # 执行股票每天变动信息入库
+
+def bootstrap_stock_daily_scheduler():
+    #创建调度器：BlockingScheduler
+    scheduler = BlockingScheduler()
+    #添加任务,时间间隔2S
+    scheduler.add_job(
+        store_stock_daily,
+        trigger='cron',
+        day_of_week='mon-fri',
+        hour=15,
+        minute=30,
+    )
+    #scheduler.add_job(MonitorSystem, 'interval', seconds=60, id='test_job1')
+    #添加任务,时间间隔5S
+    #scheduler.add_job(MonitorNetWork, 'interval', seconds=10, id='test_job2')
+    scheduler.start()
 
 def main():
     print('main')
@@ -36,7 +53,8 @@ def main():
     elif input_value == '2' or input_value == '行业个股':
         store_stock_industry() # 执行行业股票信息入库
     elif input_value == '3' or input_value == '股票日更':
-        store_stock_daily() # 执行股票每天变动信息入库
+        #store_stock_daily() # 执行股票每天变动信息入库
+        bootstrap_stock_daily_scheduler()
     elif input_value == '4' or input_value == '个股+日更':
         store_stock_industry_and_daily() #联合执行
     elif input_value == '5' or input_value == '财务指标':
