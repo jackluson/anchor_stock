@@ -15,8 +15,6 @@ from stock_info.api import StockApier
 from sql_model.query import StockQuery
 from sql_model.insert import StockInsert
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
-
 def store_stock_daily(target_date=None):
     if target_date and type(target_date) is not datetime:
         raise TypeError('target_date must be a datetime.datetime, not a %s' % type(target_date))
@@ -26,7 +24,7 @@ def store_stock_daily(target_date=None):
         target_date = time.strftime('%Y-%m-%d', time.localtime())
     each_query = StockQuery()
     each_insert = StockInsert()
-    each_api = StockApier(juchao=12)
+    each_api = StockApier()
     all_stock = each_query.query_all_stock(target_date)
     count = len(all_stock)
     line = f'开始爬取：爬取时间: {target_date} 个数数量: {count}'

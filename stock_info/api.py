@@ -13,13 +13,22 @@ import json
 import os
 import pprint
 from dotenv import load_dotenv
-from utils.index import get_symbol_by_code
+from utils.index import get_symbol_by_code, get_request_header_key
 from utils.file_op import write_fund_json_data
 
 class StockApier:
-    def __init__(self):
+    mcode=None # 巨潮资讯接口mcode
+
+    def __init__(self, *, is_trigger_cninfo=True):
+        if is_trigger_cninfo:
+            self.mcode =  os.getenv('mcode')
+            if not self.mcode:
+                entry_url = 'http://webapi.cninfo.com.cn/#/dataBrowse'
+                target_url = 'http://webapi.cninfo.com.cn/api/stock/p_public0001'
+                header_key = 'mcode'
+                self.mcode = get_request_header_key(entry_url,target_url,header_key)
         load_dotenv()
-    
+
     def get_client_headers(self, cookie_env_key="xue_qiu_cookie", referer="https://xueqiu.com"):
         cookie = os.getenv(cookie_env_key)
         headers = {
@@ -33,12 +42,11 @@ class StockApier:
 
     def get_stocks_by_industry(self, industry_code):
         url = "http://webapi.cninfo.com.cn/api/stock/p_public0004?platetype=137004&platecode={0}&@orderby=SECCODE:asc&@column=SECCODE,SECNAME".format(industry_code)
-        mcode = os.getenv('mcode')
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             'Origin': 'http://webapi.cninfo.com.cn',
             'Referer': 'http://webapi.cninfo.com.cn/',
-            'mcode': mcode
+            'mcode': self.mcode
         }
         payload = {
             #'fundcode': self.fund_code,
