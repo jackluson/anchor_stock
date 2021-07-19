@@ -9,8 +9,8 @@ Copyright (c) 2021 Camel Lu
 '''
 import time
 from datetime import datetime
+import logging
 from apscheduler.schedulers.blocking import BlockingScheduler
-
 from controller.store_industry import store_industry
 from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
@@ -27,20 +27,17 @@ def bootstrap_stock_daily_scheduler():
     scheduler = BlockingScheduler()
     #添加任务,时间间隔2S
     scheduler.add_job(
-        store_stock_daily,
+        store_stock_industry_and_daily,
         trigger='cron',
         day_of_week='mon-fri',
-        hour=15,
-        minute=30,
+        hour=17,
+        minute=00,
     )
-    #scheduler.add_job(MonitorSystem, 'interval', seconds=60, id='test_job1')
-    #添加任务,时间间隔5S
-    #scheduler.add_job(MonitorNetWork, 'interval', seconds=10, id='test_job2')
     scheduler.start()
 
 def main():
     print('main')
-    input_value = input("请输入执行操作:\n \
+    input_value = input("请输入下列序号执行操作:\n \
         1.“行业” \n \
         2.“行业个股”\n \
         3.“股票日更”\n \
@@ -53,13 +50,14 @@ def main():
     elif input_value == '2' or input_value == '行业个股':
         store_stock_industry() # 执行行业股票信息入库
     elif input_value == '3' or input_value == '股票日更':
-        #store_stock_daily() # 执行股票每天变动信息入库
-        bootstrap_stock_daily_scheduler()
+        store_stock_daily() # 执行股票每天变动信息入库
     elif input_value == '4' or input_value == '个股+日更':
-        store_stock_industry_and_daily() #联合执行
+        #store_stock_industry_and_daily() #联合执行
+        bootstrap_stock_daily_scheduler()
     elif input_value == '5' or input_value == '财务指标':
         store_stock_main_financial_indicator() # 入库股票财报关键指标信息
     elif input_value == '6' or input_value == 'A股估值':
         stock_value_calculate() # 入库股票财报关键指标信息
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
     main()

@@ -9,9 +9,13 @@ Copyright (c) 2021 Camel Lu
 '''
 import time
 from datetime import datetime
+import logging
+
 from stock_info.api import StockApier
 from sql_model.query import StockQuery
 from sql_model.insert import StockInsert
+
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
 
 def store_stock_daily(target_date=None):
     if target_date and type(target_date) is not datetime:
@@ -22,10 +26,12 @@ def store_stock_daily(target_date=None):
         target_date = time.strftime('%Y-%m-%d', time.localtime())
     each_query = StockQuery()
     each_insert = StockInsert()
-    each_api = StockApier()
+    each_api = StockApier(juchao=12)
     all_stock = each_query.query_all_stock(target_date)
-    print('len(all_stock)', len(all_stock))
-    for index in range(0,len(all_stock)):
+    count = len(all_stock)
+    line = f'开始爬取：爬取时间: {target_date} 个数数量: {count}'
+    logging.info(line)
+    for index in range(0,count):
         if  not index % 100:
             print('index', index)
         stock = all_stock[index]
@@ -37,6 +43,7 @@ def store_stock_daily(target_date=None):
             print("stock_daily_info_dict", stock_daily_info_dict)
             continue
         each_insert.insert_stock_daily_data(stock_daily_info_dict)
-
+    line = f'开始结束：爬取时间: {target_date} 个数数量: {count}'
+    logging.info(line)
 if __name__ == '__main__':
     store_stock_daily()
