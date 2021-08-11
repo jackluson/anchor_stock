@@ -16,17 +16,19 @@ from dotenv import load_dotenv
 from utils.index import get_symbol_by_code, get_request_header_key
 from utils.file_op import write_fund_json_data
 
+
 class StockApier:
-    mcode=None # 巨潮资讯接口mcode
+    mcode = None  # 巨潮资讯接口mcode
 
     def __init__(self, *, is_trigger_cninfo=True):
         if is_trigger_cninfo:
-            self.mcode =  os.getenv('mcode')
+            self.mcode = os.getenv('mcode')
             if not self.mcode:
                 entry_url = 'http://webapi.cninfo.com.cn/#/dataBrowse'
                 target_url = 'http://webapi.cninfo.com.cn/api/stock/p_public0001'
                 header_key = 'mcode'
-                self.mcode = get_request_header_key(entry_url,target_url,header_key)
+                self.mcode = get_request_header_key(
+                    entry_url, target_url, header_key)
         load_dotenv()
 
     def get_client_headers(self, cookie_env_key="xue_qiu_cookie", referer="https://xueqiu.com"):
@@ -41,7 +43,8 @@ class StockApier:
         return headers
 
     def get_stocks_by_industry(self, industry_code):
-        url = "http://webapi.cninfo.com.cn/api/stock/p_public0004?platetype=137004&platecode={0}&@orderby=SECCODE:asc&@column=SECCODE,SECNAME".format(industry_code)
+        url = "http://webapi.cninfo.com.cn/api/stock/p_public0004?platetype=137004&platecode={0}&@orderby=SECCODE:asc&@column=SECCODE,SECNAME".format(
+            industry_code)
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             'Origin': 'http://webapi.cninfo.com.cn',
@@ -49,7 +52,7 @@ class StockApier:
             'mcode': self.mcode
         }
         payload = {
-            #'fundcode': self.fund_code,
+            # 'fundcode': self.fund_code,
         }
         res = requests.post(url, headers=headers, data=payload)
         try:
@@ -66,12 +69,13 @@ class StockApier:
         symbol = get_symbol_by_code(code)
         if not date:
             date = time.strftime("%Y-%m-%d", time.localtime(time.time()))
-        dir = './archive_data/json/xueqiu/'+ symbol + '/'
+        dir = './archive_data/json/xueqiu/' + symbol + '/'
         file_name_path = dir + date + '.json'
         if os.path.exists(file_name_path):
             res_json = self.get_data_from_json(file_name_path)
         else:
-            url = "https://stock.xueqiu.com/v5/stock/quote.json?symbol={0}&extend=detail".format(symbol)
+            url = "https://stock.xueqiu.com/v5/stock/quote.json?symbol={0}&extend=detail".format(
+                symbol)
             headers = self.get_client_headers()
             res = requests.get(url, headers=headers)
             try:
@@ -83,9 +87,10 @@ class StockApier:
                 raise('中断')
         data = res_json['data'].get('quote')
         data_others = res_json['data'].get('others')
-        time_format = time.strftime("%Y-%m-%d", time.localtime(data['timestamp']/1000))
+        time_format = time.strftime(
+            "%Y-%m-%d", time.localtime(data['timestamp']/1000))
         # 数据存档
-        dir = './archive_data/json/xueqiu/'+ symbol + '/'
+        dir = './archive_data/json/xueqiu/' + symbol + '/'
         file_name = time_format + '.json'
         write_fund_json_data(res_json, file_name,  dir)
         #print("time_format", time_format)
@@ -136,7 +141,8 @@ class StockApier:
             'count': count,
             'timestamp': timestamp,
         }
-        url = "https://stock.xueqiu.com/v5/stock/finance/cn/indicator.json?symbol={symbol}&type={type}&is_detail=true&count={count}&timestamp={timestamp}".format(**payload)
+        url = "https://stock.xueqiu.com/v5/stock/finance/cn/indicator.json?symbol={symbol}&type={type}&is_detail=true&count={count}&timestamp={timestamp}".format(
+            **payload)
         headers = self.get_client_headers()
         res = requests.get(url, headers=headers)
         try:
@@ -147,8 +153,10 @@ class StockApier:
                 report_list = res_json.get('list')
                 for report_item in report_list:
                     #print("report_item", report_item)
-                    report_date = time.strftime("%Y-%m-%d", time.localtime(report_item.get('report_date')/1000))
-                    report_publish_date = time.strftime("%Y-%m-%d", time.localtime(report_item.get('ctime')/1000))
+                    report_date = time.strftime(
+                        "%Y-%m-%d", time.localtime(report_item.get('report_date')/1000))
+                    report_publish_date = time.strftime(
+                        "%Y-%m-%d", time.localtime(report_item.get('ctime')/1000))
                     stock_quarter_financial_indicator_dict = {
                         'code': code,
                         'name': stock_name,
@@ -229,11 +237,13 @@ class StockApier:
                         'fixed_asset_turnover_ratio': report_item.get('fixed_asset_turnover_ratio')[0],
                         'fixed_asset_turnover_ratio_yoy': report_item.get('fixed_asset_turnover_ratio')[1],
                     }
-                    stock_quarter_financial_indicator_list.append(stock_quarter_financial_indicator_dict)
-                #pprint.pprint(stock_quarter_financial_indicator_list)
+                    stock_quarter_financial_indicator_list.append(
+                        stock_quarter_financial_indicator_dict)
+                # pprint.pprint(stock_quarter_financial_indicator_list)
                 return stock_quarter_financial_indicator_list
         except:
             raise('中断')
+
     def get_data_from_json(self, path):
         with open(path) as json_file:
             return json.load(json_file)
