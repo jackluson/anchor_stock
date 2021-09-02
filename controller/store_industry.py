@@ -12,9 +12,11 @@ import json
 from pprint import pprint
 from sql_model.insert import StockInsert
 
+
 def store_industry():
-    industry_json_path = "./input/p_sysapi1016.json"
+    industry_json_path = "./input/industry.json"
     each_insert = StockInsert()
+
     def traverse_industry(list, *, level=0):
         for industry_item in list:
             industry_dict = {
@@ -33,5 +35,7 @@ def store_industry():
         shen_wan_industry_data = industry_data['records'][0]['children']
         level = 0
         traverse_industry(shen_wan_industry_data, level=level)
+
+
 if __name__ == '__main__':
     store_industry()

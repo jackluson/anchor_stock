@@ -1,0 +1,14 @@
+curl -o industry.json 'http://webapi.cninfo.com.cn/api/sysapi/p_sysapi1016' \
+  -X 'POST' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Length: 0' \
+  -H 'Accept: */*' \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'mcode: MTYzMDU5NDUyMw==' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36' \
+  -H 'Origin: http://webapi.cninfo.com.cn' \
+  -H 'Referer: http://webapi.cninfo.com.cn/' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en-CA;q=0.7,en;q=0.6,la;q=0.5' \
+  -H 'Cookie: routeId=.uc2; Hm_lvt_489bd07e99fbfc5f12cbb4145adb0a9b=1630594507; Hm_lpvt_489bd07e99fbfc5f12cbb4145adb0a9b=1630594507' \
+  --compressed \
+  --insecure
