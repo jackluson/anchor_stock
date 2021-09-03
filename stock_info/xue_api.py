@@ -1,71 +1,33 @@
 '''
-Desc: 用接口获取股票信息
-File: /api.py
+Desc: 雪球API数据
+File: /xue_api.py
 Project: stock_info
-File Created: Friday, 11th June 2021 1:58:37 pm
+File Created: Friday, 3rd September 2021 10:41:00 am
 Author: luxuemin2108@gmail.com
 -----
-Copyright (c) 2021 Camel Lu
+Copyright (c) 2020 Camel Lu
 '''
-import requests
-import time
-import json
 import os
-import pprint
-from dotenv import load_dotenv
-from utils.index import get_symbol_by_code, get_request_header_key
+import time
+import requests
+
+from .base_api import BaseApier
 from utils.file_op import write_fund_json_data
+from utils.index import get_symbol_by_code, get_request_header_key
 
 
-class StockApier:
-    mcode = None  # 巨潮资讯接口mcode
+class ApiXueqiu(BaseApier):
+    def __init__(self):
+        super().__init__()
+        self.xue_qiu_cookie = os.getenv('xue_qiu_cookie')
+        if not self.xue_qiu_cookie:
+            entry_url = 'https://xueqiu.com/'
+            target_url = 'https://xueqiu.com/interview/list/latest.json?count=5'
+            header_key = 'Cookie'
+            self.xue_qiu_cookie = get_request_header_key(
+                entry_url, target_url, header_key)
 
-    def __init__(self, *, is_trigger_cninfo=True):
-        if is_trigger_cninfo:
-            self.mcode = os.getenv('mcode')
-            if not self.mcode:
-                entry_url = 'http://webapi.cninfo.com.cn/#/dataBrowse'
-                target_url = 'http://webapi.cninfo.com.cn/api/stock/p_public0001'
-                header_key = 'mcode'
-                self.mcode = get_request_header_key(
-                    entry_url, target_url, header_key)
-        load_dotenv()
-
-    def get_client_headers(self, cookie_env_key="xue_qiu_cookie", referer="https://xueqiu.com"):
-        cookie = os.getenv(cookie_env_key)
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.106 Safari/537.36',
-            'Origin': referer,
-            'Referer': referer,
-            'Cookie': cookie
-        }
-        return headers
-
-    def get_stocks_by_industry(self, industry_code):
-        url = "http://webapi.cninfo.com.cn/api/stock/p_public0004?platetype=137004&platecode={0}&@orderby=SECCODE:asc&@column=SECCODE,SECNAME".format(
-            industry_code)
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-            'Origin': 'http://webapi.cninfo.com.cn',
-            'Referer': 'http://webapi.cninfo.com.cn/',
-            'mcode': self.mcode
-        }
-        payload = {
-            # 'fundcode': self.fund_code,
-        }
-        res = requests.post(url, headers=headers, data=payload)
-        try:
-            if res.status_code == 200:
-                res_json = res.json()
-                if res_json.get('resultcode') == 401:
-                    print('res_json', res_json)
-                    return None
-                return res_json.get('records')
-        except:
-            raise('中断')
-
-    def get_special_stock(self, code, date=None):
+    def get_special_stock_quote(self, code, date=None):
         symbol = get_symbol_by_code(code)
         if not date:
             date = time.strftime("%Y-%m-%d", time.localtime(time.time()))
@@ -243,7 +205,3 @@ class StockApier:
                 return stock_quarter_financial_indicator_list
         except:
             raise('中断')
-
-    def get_data_from_json(self, path):
-        with open(path) as json_file:
-            return json.load(json_file)

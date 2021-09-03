@@ -8,8 +8,9 @@ Author: luxuemin2108@gmail.com
 Copyright (c) 2021 Camel Lu
 '''
 from sql_model.query import StockQuery
-from stock_info.api import StockApier
+from stock_info.xue_api import ApiXueqiu
 from sql_model.insert import StockInsert
+
 
 def store_stock_main_financial_indicator():
     count = 41
@@ -17,15 +18,15 @@ def store_stock_main_financial_indicator():
     each_query = StockQuery()
     all_stock = each_query.query_all_stock()
     print('len(all_stock)', len(all_stock))
-    each_api = StockApier()
-    for index in range(76,len(all_stock)):
+    each_api = ApiXueqiu()
+    for index in range(1535, len(all_stock)):
         stock = all_stock[index]
         stock_code = stock.get('stock_code')
         print("index", index, stock_code)
-        stock_main_indicator_list = each_api.get_main_financial_indicator(stock_code, count)
+        stock_main_indicator_list = each_api.get_main_financial_indicator(
+            stock_code, count)
         for stock_main_indicator in stock_main_indicator_list:
             each_insert.insert_stock_financial_indicator(stock_main_indicator)
-            
 
 
 if __name__ == '__main__':

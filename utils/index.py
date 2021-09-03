@@ -8,11 +8,13 @@ Author: luxuemin2108@gmail.com
 Copyright (c) 2021 Camel Lu
 '''
 import re
-from selenium import webdriver
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import time
 import json
 import logging
+
+from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from utils.file_op import write_fund_json_data
 
 
 def get_symbol_by_code(stock_code):
@@ -26,7 +28,7 @@ def get_symbol_by_code(stock_code):
     return symbol
 
 
-def get_request_header_key(entry_url, target_url, request_header_key):
+def get_request_header_key(entry_url, target_url, request_header_key, mime_type="json"):
     capabilities = DesiredCapabilities.CHROME
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument('--headless')
@@ -37,11 +39,12 @@ def get_request_header_key(entry_url, target_url, request_header_key):
     logs_raw = driver.get_log("performance")
     logs = [json.loads(lr["message"])["message"] for lr in logs_raw]
     for log in logs:
-        flag = log["method"] == "Network.responseReceived" and "json" in log["params"][
+        flag = log["method"] == "Network.responseReceived" and mime_type in log["params"][
             "response"]["mimeType"] and target_url == log["params"]["response"]["url"]
-        if flag:
+        if flag and log["params"]["response"]['requestHeaders']:
+            request_header_key_value = log["params"]["response"]['requestHeaders'].get(
+                request_header_key)
             driver.quit()
-            request_header_key_value = log["params"]["response"]['requestHeaders'][request_header_key]
             line = f'此次爬取{request_header_key}: {request_header_key_value} '
             logging.info(line)
             return request_header_key_value
