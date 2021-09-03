@@ -10,6 +10,7 @@ Copyright (c) 2021 Camel Lu
 import pymysql
 from db.connect import connect
 
+
 class StockQuery:
     def __init__(self):
         connect_instance = connect()
@@ -34,6 +35,15 @@ class StockQuery:
         else:
             query_stock_sql = "SELECT stock_code FROM stock_industry as a WHERE a.stock_code NOT IN ( SELECT b.`code` FROM stock_daily_info AS b WHERE b.`timestamp` = %s )"
             self.dict_cursor.execute(query_stock_sql, [date])
+
+        results = self.dict_cursor.fetchall()
+        return results
+
+    def query_special_stock_main_financial(self, code, timestamp):
+        """ 查看股票主要财务数据
+        """
+        query_stock_sql = "SELECT b.price, b.pe_ttm, b.pe_lyr, b.pe_forecast, a.* FROM stock_main_financial_indicator as a LEFT JOIN stock_daily_info as b ON a.code = b.code WHERE a.code = %s AND b.timestamp = %s"
+        self.dict_cursor.execute(query_stock_sql, [code, timestamp])
 
         results = self.dict_cursor.fetchall()
         return results
