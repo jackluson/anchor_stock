@@ -42,7 +42,7 @@ class StockQuery:
     def query_special_stock_main_financial(self, code, timestamp):
         """ 查看股票主要财务数据
         """
-        query_stock_sql = "SELECT b.price, b.pe_ttm, b.pe_lyr, b.pe_forecast, a.* FROM stock_main_financial_indicator as a LEFT JOIN stock_daily_info as b ON a.code = b.code WHERE a.code = %s AND b.timestamp = %s"
+        query_stock_sql = "SELECT b.price, b.pe_ttm, b.pe_lyr, b.pe_forecast, a.*, c.industry_name_third, c.industry_name_second, c.industry_name_first, b.goodwill_in_net_assets, b.market_capital FROM stock_main_financial_indicator as a LEFT JOIN stock_daily_info as b ON a.code = b.code LEFT JOIN stock_industry as c ON a.code = c.stock_code WHERE a.code = %s AND b.timestamp = %s"
         self.dict_cursor.execute(query_stock_sql, [code, timestamp])
 
         results = self.dict_cursor.fetchall()

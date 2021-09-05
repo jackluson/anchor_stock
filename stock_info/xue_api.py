@@ -80,6 +80,7 @@ class ApiXueqiu(BaseApier):
             'volume': data['volume'],
             'volume_ratio': data['volume_ratio'],
             'pankou_ratio': data_others['pankou_ratio'],
+            'goodwill_in_net_assets': data['goodwill_in_net_assets'],
             'float_shares': data['float_shares'],
             'total_shares': data['total_shares'],
             'float_market_capital': data['float_market_capital'],

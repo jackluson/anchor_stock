@@ -23,6 +23,7 @@ CREATE TABLE `stock_daily_info` (
   `volume` decimal(24,3) DEFAULT NULL COMMENT '成交量',
   `volume_ratio` decimal(10,3) DEFAULT NULL COMMENT '量比（即时每分钟平均成交量与之前连续5天每分钟平均成交量的比较，而不是随意抽取某一天的成交量作为比较，所以能够客观真实地反映盘口成交异动及其力度。）',
   `pankou_ratio` decimal(10,3) DEFAULT NULL COMMENT '委比',
+  `goodwill_in_net_assets` decimal(10,3) DEFAULT NULL COMMENT '商誉占比',
   `total_shares` decimal(18,3) NOT NULL COMMENT '总股本',
   `float_shares` decimal(18,3) NOT NULL COMMENT '流通股',
   `market_capital` decimal(32,3) NOT NULL COMMENT '总市值',

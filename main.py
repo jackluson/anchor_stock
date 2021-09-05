@@ -15,7 +15,7 @@ from controller.store_industry import store_industry
 from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
-# from controller.stock_value_calculate import stock_value_calculate
+from controller.stock_valuation_calculate import stock_valuation_calculate
 
 
 def store_stock_industry_and_daily():
@@ -39,7 +39,6 @@ def bootstrap_stock_daily_scheduler():
 
 
 def main():
-    print('main')
     input_value = input("请输入下列序号执行操作:\n \
         1.“行业” \n \
         2.“行业个股”\n \
@@ -59,9 +58,10 @@ def main():
         bootstrap_stock_daily_scheduler()
     elif input_value == '5' or input_value == '财务指标':
         store_stock_main_financial_indicator()  # 入库股票财报关键指标信息
+    elif input_value == '6' or input_value == 'A股低估值':
+        stock_valuation_calculate()  # 入库股票财报关键指标信息
 
-    # elif input_value == '6' or input_value == 'A股估值':
-    #     stock_value_calculate() # 入库股票财报关键指标信息
+
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                         filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
