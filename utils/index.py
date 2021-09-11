@@ -11,6 +11,7 @@ import re
 import time
 import json
 import logging
+from threading import Thread, Lock
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -49,3 +50,36 @@ def get_request_header_key(entry_url, target_url, request_header_key, mime_type=
             logging.info(line)
             return request_header_key_value
     driver.quit()
+
+
+def bootstrap_thread(target_fn, total, thread_count=2):
+    threaders = []
+    start_time = time.time()
+    # 如果少于10个，只开一个线程
+    if total < 10:
+        thread_count = 1
+    step_num = total / thread_count
+    for i in range(thread_count):
+        # start = steps[i]['start']
+        # end = steps[i]['end']
+        start = i * step_num
+        end = (i + 1) * step_num
+        t = Thread(target=target_fn, args=(int(start), int(end)))
+        t.setDaemon(True)
+        threaders.append(t)
+        t.start()
+    for threader in threaders:
+        threader.join()
+    end_time = time.time()
+    print(total, 'run time is %s' % (end_time - start_time))
+
+
+def lock_process(func):
+    lock = Lock()
+
+    def wrapper(self, *args):
+        lock.acquire()
+        result = func(self, *args)
+        lock.release()
+        return result
+    return wrapper

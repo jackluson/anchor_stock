@@ -9,7 +9,9 @@ Copyright (c) 2021 Camel Lu
 '''
 
 from db.connect import connect
+from utils.index import lock_process
 from lib.mysnowflake import IdWorker
+
 
 class StockInsert:
     def __init__(self):
@@ -17,8 +19,9 @@ class StockInsert:
         self.connect_instance = connect_instance.get('connect')
         self.cursor = connect_instance.get('cursor')
         self.IdWorker = IdWorker()
-    # 拼接sql
-    def generate_insert_sql(self, target_dict, table_name, ignore_list):  
+
+    def generate_insert_sql(self, target_dict, table_name, ignore_list):
+        # 拼接sql
         keys = 'id,' + ','.join(target_dict.keys())
         values = ','.join(['%s'] * (len(target_dict) + 1))
         update_values = ''
@@ -33,8 +36,9 @@ class StockInsert:
             update_values=update_values[0:-1]
         )
         return sql_insert
-    # 入库申万行业数据
+
     def insert_industry_data(self, industry_dict):
+        # 入库申万行业数据
         snowflaw_id = self.IdWorker.get_id()
         industry_sql_insert = self.generate_insert_sql(
             industry_dict, 'shen_wan_industry', ['id'])
@@ -51,8 +55,9 @@ class StockInsert:
                             tuple([snowflaw_id, *stock_dict.values()]))
         self.connect_instance.commit()
 
-    # 入库股票日常股价等信息
+    @lock_process
     def insert_stock_daily_data(self, stock_dict):
+        # 入库股票日常股价等信息
         snowflaw_id = self.IdWorker.get_id()
         stock_sql_insert = self.generate_insert_sql(
             stock_dict, 'stock_daily_info', ['id'])
@@ -60,12 +65,11 @@ class StockInsert:
                             tuple([snowflaw_id, *stock_dict.values()]))
         self.connect_instance.commit()
 
-    # 入库财务指标等数据
     def insert_stock_financial_indicator(self, financial_indicator_dict):
+        # 入库财务指标等数据
         snowflaw_id = self.IdWorker.get_id()
         stock_sql_insert = self.generate_insert_sql(
             financial_indicator_dict, 'stock_main_financial_indicator', ['id'])
         self.cursor.execute(stock_sql_insert,
                             tuple([snowflaw_id, *financial_indicator_dict.values()]))
         self.connect_instance.commit()
-        
