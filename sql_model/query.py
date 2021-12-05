@@ -7,7 +7,6 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2021 Camel Lu
 '''
-import pymysql
 from db.connect import connect
 
 
