@@ -8,7 +8,9 @@ Author: luxuemin2108@gmail.com
 Copyright (c) 2020 Camel Lu
 '''
 import os
+import pandas as pd
 import time
+import dateutil
 import requests
 
 from .base_api import BaseApier
@@ -22,10 +24,11 @@ class ApiXueqiu(BaseApier):
         self.xue_qiu_cookie = os.getenv('xue_qiu_cookie')
         if not self.xue_qiu_cookie:
             entry_url = 'https://xueqiu.com/'
-            target_url = 'https://xueqiu.com/interview/list/latest.json?count=5'
+            host = 'xueqiu.com'
             header_key = 'Cookie'
-            self.xue_qiu_cookie = get_request_header_key(
-                entry_url, target_url, header_key)
+            xue_qiu_cookie = get_request_header_key(
+                entry_url, host, header_key)
+            self.xue_qiu_cookie = xue_qiu_cookie
 
     def get_special_stock_quote(self, code, date=None):
         symbol = get_symbol_by_code(code)
@@ -206,3 +209,40 @@ class ApiXueqiu(BaseApier):
                 return stock_quarter_financial_indicator_list
         except:
             raise('中断')
+
+    def get_kline_info(self, symbol, begin, end, period):
+        begin_timestamp = dateutil.parser.parse(begin).timestamp()
+        end_timestamp = dateutil.parser.parse(end).timestamp()
+
+        payload = {
+            'symbol': symbol,
+            'type': 'before',
+            'period': period,
+            # JavaScript时间戳 = python时间戳 * 1000
+            'begin': int(begin_timestamp * 1000),
+            'end': int(end_timestamp * 1000),
+            'indicator': 'kline,pe,pb,ps,pcf,market_capital,agt,ggt,balance'
+            # 'count': 181,
+            # 'timestamp': timestamp,
+        }
+        url = "https://stock.xueqiu.com/v5/stock/chart/kline.json?symbol={symbol}&begin={begin}&end={end}&period={period}&type={type}&indicator={indicator}".format(
+            **payload)
+        headers = self.get_client_headers()
+        res = requests.get(url, headers=headers)
+        res_json = {}
+        try:
+            if res.status_code == 200:
+                res_json = res.json()
+            else:
+                print('请求异常', res)
+        except:
+            raise ('中断')
+
+        columns = res_json["data"]["column"]
+        items = res_json["data"]["item"]
+        pd.Series(items)
+        df = pd.DataFrame(
+            items, columns=columns)
+        df = df[['timestamp', 'open', 'close',
+                 'percent', 'turnoverrate', 'amount']]
+        return df
