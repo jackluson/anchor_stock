@@ -13,14 +13,58 @@ from stock_info.xue_api import ApiXueqiu
 
 def stock_period_gain_calculate():
     each_api = ApiXueqiu()
-    symbol = 'SH000300'
-    period = 'month'
-    begin_date = '2021-01-01'
-    end_date = '2021-11-30'
+    stock_list = [
+        {
+            'name': '沪深300',
+            'market': 'SH',
+            'code': '000300'
+        },
+        {
+            'name': '中证500',
+            'market': 'SH',
+            'code': '000905'
+        },
+        {
+            'name': '中证1000',
+            'market': 'SH',
+            'code': '000852'
+        },
+        {
+            'name': '中证全指',
+            'market': 'SH',
+            'code': '000985'
+        },
+        {
+            'name': '上证指数',
+            'market': 'SH',
+            'code': '000001'
+        },
+        {
+            'name': '深证成指',
+            'market': 'SZ',
+            'code': '399001'
+        },
+        {
+            'name': '创业板指',
+            'market': 'SZ',
+            'code': '399006'
+        },
+        {
+            'name': '科创50',
+            'market': 'SH',
+            'code': '000688'
+        }
+    ]
+    for stock in stock_list:
+        symbol = stock.get('market') + stock.get('code')
+        period = 'year'
+        begin_date = '2021-01-01'
+        end_date = '2021-12-31'
 
-    df_stock_kline_info = each_api.get_kline_info(
-        symbol, begin_date, end_date, period)
-    print(df_stock_kline_info)
+        df_stock_kline_info = each_api.get_kline_info(
+            symbol, begin_date, end_date, period)
+        print(stock.get('name'), '数据如下:')
+        print(df_stock_kline_info)
 
 
 if __name__ == '__main__':

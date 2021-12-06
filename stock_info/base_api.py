@@ -16,7 +16,7 @@ class BaseApier:
     def __init__(self):
         load_dotenv()
 
-    def get_client_headers(self, cookie_env_key="xue_qiu_cookie", referer="https://xueqiu.com"):
+    def get_client_headers(self, *,  cookie_env_key="xue_qiu_cookie", referer="https://xueqiu.com"):
         cookie = self.__dict__.get(cookie_env_key)
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
