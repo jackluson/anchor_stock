@@ -8,6 +8,9 @@ Author: luxuemin2108@gmail.com
 Copyright (c) 2021 Camel Lu
 '''
 
+import os
+import pandas as pd
+import json
 from stock_info.xue_api import ApiXueqiu
 
 
@@ -67,5 +70,21 @@ def stock_period_gain_calculate():
         print(df_stock_kline_info)
 
 
+def etf_gain_calulate():
+    dir = './data/sh'
+    files = os.listdir(dir)
+    for file in files:
+        file_path = dir + '/' + file
+        with open(file_path) as json_file:
+            cur_market_etfs = json.load(json_file)
+            print("cur_market_etfs", type(cur_market_etfs))
+            df = pd.DataFrame(
+                cur_market_etfs)
+            df = df[['fundCode', 'fundAbbr', 'secNameFull',
+                     'INDEX_NAME', 'companyName']]
+            print(df)
+
+
 if __name__ == '__main__':
-    stock_period_gain_calculate()
+    # stock_period_gain_calculate()
+    etf_gain_calulate()
