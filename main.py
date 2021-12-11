@@ -16,6 +16,8 @@ from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
 from controller.stock_valuation_calculate import stock_valuation_calculate
+from controller.stock_period_gain_calculate import stock_period_gain_calculate, etf_gain_calulate
+from controller.download_etf import download_sse_etf
 
 
 def store_stock_industry_and_daily():
@@ -63,6 +65,9 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                        filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
-    main()
+    # logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+    #                     filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
+    # stock_period_gain_calculate()
+    # main()
+    etf_gain_calulate()
+    # download_sse_etf()

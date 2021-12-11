@@ -228,6 +228,7 @@ class ApiXueqiu(BaseApier):
         url = "https://stock.xueqiu.com/v5/stock/chart/kline.json?symbol={symbol}&begin={begin}&end={end}&period={period}&type={type}&indicator={indicator}".format(
             **payload)
         headers = self.get_client_headers()
+        # print("headers", headers)
         res = requests.get(url, headers=headers)
         res_json = {}
         try:
@@ -243,6 +244,19 @@ class ApiXueqiu(BaseApier):
         pd.Series(items)
         df = pd.DataFrame(
             items, columns=columns)
-        df = df[['timestamp', 'open', 'close',
-                 'percent', 'turnoverrate', 'amount']]
+        if df.empty:
+            print(symbol)
+            return df
+        try:
+            df = df[['timestamp', 'open', 'close',
+                     'percent', 'turnoverrate', 'amount']]
+            df['timestamp'] = df['timestamp'] / 1000
+            df['timestamp'] = pd.to_datetime(
+                df['timestamp'], unit='s', utc=True)
+            # df['date'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M')
+            df = df.set_index('timestamp').tz_convert('Asia/Shanghai')
+        except:
+            print(res_json)
+            print(symbol)
+            return pd.DataFrame({'A': []})
         return df
