@@ -10,6 +10,7 @@ Copyright (c) 2020 Camel Lu
 import os
 import pandas as pd
 import time
+import logging
 import dateutil
 import requests
 
@@ -236,7 +237,11 @@ class ApiXueqiu(BaseApier):
                 res_json = res.json()
             else:
                 print('请求异常', res)
+                line = f'该ETF{symbol}{res}--api数据有误'
+                logging.error(line)
         except:
+            line = f'该ETF{symbol}--api数据有误'
+            logging.error(line)
             raise ('中断')
 
         columns = res_json["data"]["column"]
@@ -244,11 +249,12 @@ class ApiXueqiu(BaseApier):
         pd.Series(items)
         df = pd.DataFrame(
             items, columns=columns)
+
         if df.empty:
-            print(symbol)
+            # print(symbol)
             return df
         try:
-            df = df[['timestamp', 'open', 'close',
+            df = df[['timestamp', 'open', 'close', 'chg',
                      'percent', 'turnoverrate', 'amount']]
             df['timestamp'] = df['timestamp'] / 1000
             df['timestamp'] = pd.to_datetime(
@@ -258,5 +264,7 @@ class ApiXueqiu(BaseApier):
         except:
             print(res_json)
             print(symbol)
+            line = f'该ETF{symbol}{res_json}数据处理有错'
+            logging.error(line)
             return pd.DataFrame({'A': []})
         return df
