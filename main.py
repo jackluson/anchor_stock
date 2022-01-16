@@ -7,7 +7,6 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2021 Camel Lu
 '''
-import time
 from datetime import datetime
 import logging
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -17,7 +16,7 @@ from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
 from controller.stock_valuation_calculate import stock_valuation_calculate
 from controller.stock_period_gain_calculate import stock_period_gain_calculate, etf_gain_calulate
-from controller.download_etf import download_sse_etf
+from controller.store_etf import store_etf
 
 
 def store_stock_industry_and_daily():
@@ -48,6 +47,7 @@ def main():
         4.“个股+日更”\n \
         5.“财务指标”\n \
         6.“A股估值”\n \
+        7.入库ETF\n \
     输入：")
     if input_value == '1' or input_value == '行业':
         store_industry()  # 执行申万行业信息入库
@@ -62,12 +62,26 @@ def main():
         store_stock_main_financial_indicator()  # 入库股票财报关键指标信息
     elif input_value == '6' or input_value == 'A股低估值':
         stock_valuation_calculate()  # 入库股票财报关键指标信息
+    elif input_value == '7' or input_value == '入库ETF':
+        store_etf()  # 入库ETF
 
 
 if __name__ == '__main__':
     # logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
     #                     filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
-    # stock_period_gain_calculate()
+
     # main()
-    etf_gain_calulate()
+    # 市场主要指数
+    # stock_period_gain_calculate({
+    #     'begin_date': '2021-06-01',
+    #     'end_date': '2022-01-01'
+    #     # 'date': '2021-12-22',
+    #     # 'freq': 'Y'  # Y,Q,M,W,D
+    # })
+
+    # etf_gain_calulate({
+    #     'date': '2022-01-13',
+    #     'freq': 'D',
+    # }, 10)
     # download_sse_etf()
+    store_etf()

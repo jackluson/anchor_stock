@@ -73,3 +73,19 @@ class StockInsert:
         self.cursor.execute(stock_sql_insert,
                             tuple([snowflaw_id, *financial_indicator_dict.values()]))
         self.connect_instance.commit()
+
+    def batch_insert_etf_fund(self, fund_list):
+        etf_dict = {
+            'code': '',
+            'name': '',
+            'full_name': '',
+            'index_name': '',
+            'index_code': '',
+            'type': '',
+            'company': '',
+            'market': ''
+        }
+        etf_sql_insert = self.generate_insert_sql(
+            etf_dict, 'etf_fund', ['id', 'code'])
+        self.cursor.executemany(etf_sql_insert, fund_list)
+        self.connect_instance.commit()
