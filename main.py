@@ -15,7 +15,8 @@ from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
 from controller.stock_valuation_calculate import stock_valuation_calculate
-from controller.stock_period_gain_calculate import stock_period_gain_calculate, etf_gain_calulate
+from controller.stock_period_gain_calculate import stock_period_gain_calculate, etf_gain_calulate, AssetCalculator
+from controller.store_etf import store_etf
 from controller.store_etf import store_etf
 
 
@@ -83,5 +84,13 @@ if __name__ == '__main__':
     #     'date': '2022-01-13',
     #     'freq': 'D',
     # }, 10)
+    etf_gain = AssetCalculator({
+        'is_year': 1,
+        'type': 'etf',  # index or etf
+        'markdown': 1
+    })
+    etf_gain.format_params({
+        'date': '2022-01-18',
+        'freq': 'D',
+    }).calculate().output()
     # download_sse_etf()
-    store_etf()
