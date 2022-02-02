@@ -15,7 +15,7 @@ from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
 from controller.stock_valuation_calculate import stock_valuation_calculate
-from controller.stock_period_gain_calculate import stock_period_gain_calculate, etf_gain_calulate, AssetCalculator
+from controller.stock_period_gain_calculate import AssetCalculator
 from controller.store_etf import store_etf
 from controller.store_etf import store_etf
 
@@ -49,12 +49,16 @@ def main():
         5.“财务指标”\n \
         6.“A股估值”\n \
         7.入库ETF\n \
+        8.ETF收益计算\n \
     输入：")
     if input_value == '1' or input_value == '行业':
         store_industry()  # 执行申万行业信息入库
     elif input_value == '2' or input_value == '行业个股':
         store_stock_industry()  # 执行行业股票信息入库
     elif input_value == '3' or input_value == '股票日更':
+        logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                            filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
+
         store_stock_daily()  # 执行股票每天变动信息入库
     elif input_value == '4' or input_value == '个股+日更':
         # store_stock_industry_and_daily() #联合执行
@@ -65,32 +69,20 @@ def main():
         stock_valuation_calculate()  # 入库股票财报关键指标信息
     elif input_value == '7' or input_value == '入库ETF':
         store_etf()  # 入库ETF
+    elif input_value == '8' or input_value == 'ETF收益计算':
+        etf_gain = AssetCalculator({
+            'is_year': 1,
+            'day_10_ago': 1,
+            'day_20_ago': 0,
+            'day_60_ago': 1,
+            'type': 'etf',  # index or etf
+            'markdown': 0
+        })
+        etf_gain.format_params({
+            'date': '2022-01-27',
+            'freq': 'W',  # Y,Q,M,W,D
+        }).calculate().output()  # ETF收益计算
 
 
 if __name__ == '__main__':
-    # logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-    #                     filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
-
-    # main()
-    # 市场主要指数
-    # stock_period_gain_calculate({
-    #     'begin_date': '2021-06-01',
-    #     'end_date': '2022-01-01'
-    #     # 'date': '2021-12-22',
-    #     # 'freq': 'Y'  # Y,Q,M,W,D
-    # })
-
-    # etf_gain_calulate({
-    #     'date': '2022-01-13',
-    #     'freq': 'D',
-    # }, 10)
-    etf_gain = AssetCalculator({
-        'is_year': 1,
-        'type': 'etf',  # index or etf
-        'markdown': 1
-    })
-    etf_gain.format_params({
-        'date': '2022-01-18',
-        'freq': 'D',
-    }).calculate().output()
-    # download_sse_etf()
+    main()
