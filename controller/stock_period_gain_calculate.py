@@ -30,6 +30,7 @@ class AssetCalculator:
         self.day_60_ago = config.get('day_60_ago')
         self.markdown = config.get('markdown')
         self.type = config.get('type')
+        self.count = config.get('count') if config.get('count') else 5
         self.date = datetime.now().strftime("%Y-%m-%d")
         self.each_api = ApiXueqiu()
         if self.type == 'etf':
@@ -239,7 +240,8 @@ class AssetCalculator:
         else:
             print(df)
 
-    def ouputRank(self, count=5):
+    def ouputRank(self):
+        count = self.count
         top_df = self.df_data.head(count)
         last_df = self.df_data.tail(count).iloc[::-1]
         print('涨幅前{}名为:'.format(count))

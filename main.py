@@ -49,7 +49,7 @@ def main():
         5.“财务指标”\n \
         6.“A股估值”\n \
         7.入库ETF\n \
-        8.ETF收益计算\n \
+        8.股票/ETF收益计算\n \
     输入：")
     if input_value == '1' or input_value == '行业':
         store_industry()  # 执行申万行业信息入库
@@ -69,9 +69,10 @@ def main():
         stock_valuation_calculate()  # 入库股票财报关键指标信息
     elif input_value == '7' or input_value == '入库ETF':
         store_etf()  # 入库ETF
-    elif input_value == '8' or input_value == 'ETF收益计算':
+    elif input_value == '8' or input_value == '股票/ETF收益计算':
         etf_gain = AssetCalculator({
             'is_year': 1,
+            'count': 6,
             'day_10_ago': 1,
             'day_20_ago': 0,
             'day_60_ago': 1,
