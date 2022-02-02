@@ -46,3 +46,15 @@ class StockQuery:
 
         results = self.dict_cursor.fetchall()
         return results
+
+    def query_etf(self):
+        """
+        查询ETF
+        Args:
+            market ([str]): ['sh', 'sz']
+        """
+        query_stock_sql = "SELECT a.code, a.name, a.market FROM etf_fund as a"
+        self.dict_cursor.execute(query_stock_sql)
+
+        results = self.dict_cursor.fetchall()
+        return results
