@@ -236,13 +236,15 @@ class ApiXueqiu(BaseApier):
             if res.status_code == 200:
                 res_json = res.json()
             else:
-                print('请求异常', res)
+                print('请求异常', res, symbol)
                 line = f'该ETF{symbol}{res}--api数据有误'
                 logging.error(line)
+                return pd.DataFrame(items, columns=[])
         except:
             line = f'该ETF{symbol}--api数据有误'
             logging.error(line)
-            raise ('中断')
+            return pd.DataFrame(items, columns=[])
+            # raise ('中断')
 
         columns = res_json["data"]["column"]
         items = res_json["data"]["item"]
