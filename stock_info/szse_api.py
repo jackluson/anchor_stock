@@ -13,10 +13,10 @@ import requests
 
 from utils.index import get_request_header_key
 
-from .base_api import BaseApier
+from base.base_api_config import BaseApiConfig
 
 
-class ApiSZSE(BaseApier):
+class ApiSZSE(BaseApiConfig):
     def __init__(self):
         super().__init__()
         self.szse_cookie = os.getenv('szse_cookie')

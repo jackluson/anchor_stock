@@ -14,10 +14,10 @@ import requests
 
 from utils.index import get_request_header_key
 
-from .base_api import BaseApier
+from base.base_api_config import BaseApiConfig
 
 
-class ApiSSE(BaseApier):
+class ApiSSE(BaseApiConfig):
     def __init__(self):
         super().__init__()
         self.sse_cookie = os.getenv('sse_cookie')

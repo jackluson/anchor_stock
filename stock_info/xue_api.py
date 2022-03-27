@@ -14,12 +14,12 @@ import logging
 import dateutil
 import requests
 
-from .base_api import BaseApier
+from base.base_api_config import BaseApiConfig
 from utils.file_op import write_fund_json_data
 from utils.index import get_symbol_by_code, get_request_header_key
 
 
-class ApiXueqiu(BaseApier):
+class ApiXueqiu(BaseApiConfig):
     def __init__(self):
         super().__init__()
         self.xue_qiu_cookie = os.getenv('xue_qiu_cookie')

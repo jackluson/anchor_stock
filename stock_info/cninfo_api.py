@@ -11,10 +11,10 @@ import os
 import requests
 
 from utils.index import get_request_header_key
-from .base_api import BaseApier
+from base.base_api_config import BaseApiConfig
 
 
-class ApiCninfo(BaseApier):
+class ApiCninfo(BaseApiConfig):
     mcode = None  # 巨潮资讯接口mcode
 
     def __init__(self):
