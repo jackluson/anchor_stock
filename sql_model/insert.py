@@ -10,13 +10,12 @@ Copyright (c) 2021 Camel Lu
 
 from db.connect import connect
 from utils.index import lock_process
+from .base import BaseSqlModel
 from lib.mysnowflake import IdWorker
 
-class StockInsert:
+class StockInsert(BaseSqlModel):
     def __init__(self):
-        connect_instance = connect()
-        self.connect_instance = connect_instance.get('connect')
-        self.cursor = connect_instance.get('cursor')
+        super().__init__()
         self.IdWorker = IdWorker()
 
     def generate_insert_sql(self, target_dict, table_name, ignore_list):
@@ -43,7 +42,7 @@ class StockInsert:
             industry_dict, 'shen_wan_industry', ['id'])
         self.cursor.execute(industry_sql_insert,
                             tuple([snowflaw_id, *industry_dict.values()]))
-        self.connect_instance.commit()
+        self.connect.commit()
 
     # 入库股票行业信息
     def insert_stock_industry_data(self, stock_dict):
@@ -52,7 +51,7 @@ class StockInsert:
             stock_dict, 'stock_industry', ['id', 'code'])
         self.cursor.execute(stock_sql_insert,
                             tuple([snowflaw_id, *stock_dict.values()]))
-        self.connect_instance.commit()
+        self.connect.commit()
 
     @lock_process
     def insert_stock_daily_data(self, stock_dict):
@@ -62,7 +61,7 @@ class StockInsert:
             stock_dict, 'stock_daily_info', ['id'])
         self.cursor.execute(stock_sql_insert,
                             tuple([snowflaw_id, *stock_dict.values()]))
-        self.connect_instance.commit()
+        self.connect.commit()
 
     def insert_stock_financial_indicator(self, financial_indicator_dict):
         # 入库财务指标等数据
@@ -71,7 +70,7 @@ class StockInsert:
             financial_indicator_dict, 'stock_main_financial_indicator', ['id'])
         self.cursor.execute(stock_sql_insert,
                             tuple([snowflaw_id, *financial_indicator_dict.values()]))
-        self.connect_instance.commit()
+        self.connect.commit()
 
     def batch_insert_etf_fund(self, fund_list):
         etf_dict = {
@@ -82,9 +81,11 @@ class StockInsert:
             'index_code': '',
             'type': '',
             'company': '',
+            'found_date': '',
+            'delist_date': '',
             'market': ''
-        }
+        }# 保持与sq表l设计顺序一致
         etf_sql_insert = self.generate_insert_sql(
             etf_dict, 'etf_fund', ['id', 'code'])
         self.cursor.executemany(etf_sql_insert, fund_list)
-        self.connect_instance.commit()
+        self.connect.commit()

@@ -28,11 +28,13 @@ class ApiSZSE(BaseApiConfig):
                 entry_url, host, header_key)
             self.szse_cookie = szse_cookie
 
-    def get_etf_fund_list(self):
-        url = "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1945&random={random}&tab2PAGESIZE={tab2PAGESIZE}&tab1PAGESIZE={tab1PAGESIZE}".format(
+    def get_etf_fund_list(self, tab1PAGENO,tab2PAGENO):
+        url = "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1945&tab1PAGENO={tab1PAGENO}&tab2PAGENO={tab2PAGENO}&random={random}&tab1PAGESIZE={tab1PAGESIZE}&tab2PAGESIZE={tab2PAGESIZE}".format(
             random=random.random(),
-            tab2PAGESIZE=500,
-            tab1PAGESIZE=500,
+            tab1PAGENO=tab1PAGENO,
+            tab2PAGENO=tab2PAGENO,
+            tab2PAGESIZE=10,# 目前设置无效
+            tab1PAGESIZE=10,# 目前设置无效
         )
         headers = self.get_client_headers(
             cookie_env_key="szse_cookie",

@@ -9,15 +9,20 @@ Copyright (c) 2021 Camel Lu
 '''
 from random import random
 from time import time
+import numpy as np
 import pandas as pd
 from sql_model.insert import StockInsert
 from stock_info.sse_api import ApiSSE
 from stock_info.szse_api import ApiSZSE
+from stock_info.xue_api import ApiXueqiu
 
-
-def store_sse_etf():
-    each_api = ApiSSE()
+def batch_insert_etf(df):
+    f_fund_list = df.replace({'': None})
     each_insert = StockInsert()
+    each_insert.batch_insert_etf_fund(f_fund_list.values.tolist())
+
+def store_sse_etf(api_xue_qiu):
+    each_api = ApiSSE()
     subClass_list = [
         {
             'name': '单市场ETF',
@@ -62,24 +67,39 @@ def store_sse_etf():
             'companyName',
         ]
         df_fund_list = pd.DataFrame(fund_list.get('result'), columns=columns)
-        df_fund_list['market'] = 'sh'
         for index in range(len(df_fund_list)):
             id = int(time() * int((index + random()) * 10000)) + \
                 int(random() * 10000) + index
+            code = df_fund_list.iloc[index]['fundCode']
+            etf_base_info = api_xue_qiu.get_stock_page_info('sh' + code)
             df_fund_list.at[index, 'id'] = id
-        each_insert.batch_insert_etf_fund(df_fund_list.values.tolist())
+            df_fund_list.at[index, 'found_date'] = etf_base_info.get('found_date')
+            delist_date = etf_base_info.get('delist_date')
+            df_fund_list.at[index, 'delist_date'] = delist_date if delist_date else ''
+        df_fund_list['market'] = 'sh' # 保持与sq表l设计顺序一致
+
+        batch_insert_etf(df_fund_list)
         # etf_name = '{name}.json'.format(
         #     name=subClass.get('name'))
         # with open('./data/sh/' + etf_name, 'w', encoding='utf-8') as f:
         #     json.dump(fund_list.get('result'), f, ensure_ascii=False, indent=2)
 
 
-def store_szse_etf():
+def store_szse_etf(api_xue_qiu):
     each_api = ApiSZSE()
-    fund_list = each_api.get_etf_fund_list()
+    cur_page = 1
+    fund_list = each_api.get_etf_fund_list(cur_page, cur_page)
     etf_items = fund_list[0].get('data')
-    # etf_cols = fund_list[0].get('metadata').get('cols')
     nets_items = fund_list[1].get('data')
+    metadata = fund_list[0].get('metadata')
+    page_count = metadata.get('pagecount')
+    for page in range(2, page_count+1):
+        cur_fund_list = each_api.get_etf_fund_list(page, page)
+        cur_etf_items = cur_fund_list[0].get('data')
+        cur_nets_items = cur_fund_list[1].get('data')
+        etf_items.extend(cur_etf_items)
+        nets_items.extend(cur_nets_items)
+    # etf_cols = fund_list[0].get('metadata').get('cols')
     columns = [
         'id',
         'sys_key',
@@ -115,20 +135,25 @@ def store_szse_etf():
             index_name = index_info.split(' ')[1]
         df_etf.at[index, 'nhzs'] = index_name
         df_etf.at[index, 'INDEX_CODE'] = index_code
+        symbol = 'sz' + code
+        etf_base_info = api_xue_qiu.get_stock_page_info(symbol)
+        df_etf.at[index, 'found_date'] = etf_base_info.get('found_date')
+        delist_date = etf_base_info.get('delist_date')
+        df_etf.at[index, 'delist_date'] = delist_date if delist_date else ''
     rename_map = {
         'sys_key': 'fundCode',
         'glrmc': 'companyName',
         'nhzs': 'INDEX_NAME'
     }
     df_etf.rename(columns=rename_map, inplace=True)
-    df_etf['market'] = 'sz'
-    each_insert = StockInsert()
-    each_insert.batch_insert_etf_fund(df_etf.values.tolist())
+    df_etf['market'] = 'sz' 
+    batch_insert_etf(df_etf)
 
 
 def store_etf():
-    store_sse_etf()
-    store_szse_etf()
+    api_xue_qiu = ApiXueqiu()
+    store_sse_etf(api_xue_qiu)
+    # store_szse_etf(api_xue_qiu)
 
 
 if __name__ == '__main__':
