@@ -12,7 +12,6 @@ from db.connect import connect
 from utils.index import lock_process
 from lib.mysnowflake import IdWorker
 
-
 class StockInsert:
     def __init__(self):
         connect_instance = connect()

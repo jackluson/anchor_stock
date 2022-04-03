@@ -13,6 +13,7 @@ import time
 import logging
 import dateutil
 import requests
+from bs4 import BeautifulSoup
 
 from base.base_api_config import BaseApiConfig
 from utils.file_op import write_fund_json_data
@@ -214,7 +215,6 @@ class ApiXueqiu(BaseApiConfig):
     def get_kline_info(self, symbol, begin, end, period):
         begin_timestamp = dateutil.parser.parse(begin).timestamp()
         end_timestamp = dateutil.parser.parse(end).timestamp()
-
         payload = {
             'symbol': symbol,
             'type': 'before',
@@ -257,7 +257,7 @@ class ApiXueqiu(BaseApiConfig):
             return df
         try:
             df = df[['timestamp', 'open', 'close', 'chg',
-                     'percent', 'turnoverrate', 'amount']]
+                     'percent', 'volume', 'amount']]
             df['timestamp'] = df['timestamp'] / 1000
             df['timestamp'] = pd.to_datetime(
                 df['timestamp'], unit='s', utc=True)
@@ -270,3 +270,20 @@ class ApiXueqiu(BaseApiConfig):
             logging.error(line)
             return pd.DataFrame({'A': []})
         return df
+
+    def get_stock_page_info(self, symbol):
+        url = "https://xueqiu.com/S/{}".format(symbol)
+        headers = self.get_client_headers()
+        res = requests.get(url, headers=headers)
+        if res.status_code != 200:
+            return None
+        soup = BeautifulSoup(res.text, 'lxml')
+        # print(soup.body.select('table.quote-info')[0].select('td'))
+        etf_info = {}
+        for td in soup.body.select('table.quote-info')[0].select('td'):
+            if '成立日：' in td.text:
+                etf_info['found_date'] = td.span.text
+            elif '到期日：' in td.text and '--' not in td.span.text:
+                print(td.getText(), td.span.text)
+                etf_info['delist_date'] = td.span.text
+        return etf_info

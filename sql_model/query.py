@@ -7,15 +7,12 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2021 Camel Lu
 '''
-from db.connect import connect
+from .base import BaseSqlModel
 
 
-class StockQuery:
+class StockQuery(BaseSqlModel):
     def __init__(self):
-        connect_instance = connect()
-        self.connect = connect_instance.get('connect')
-        self.cursor = connect_instance.get('cursor')
-        self.dict_cursor = connect_instance.get('dict_cursor')
+        super().__init__()
 
     def query_industry_data(self):
         query_industry_sql = "SELECT a1.industry_name AS '三级行业', a1.industry_code as '三级行业代码', a2.industry_name AS '二级行业',a2.industry_code as '二级行业代码', a3.industry_name AS '一级行业', a3.industry_code as '一级行业代码' FROM shen_wan_industry as a1 \
@@ -53,7 +50,7 @@ class StockQuery:
         Args:
             market ([str]): ['sh', 'sz']
         """
-        query_stock_sql = "SELECT a.code, a.name, a.market FROM etf_fund as a"
+        query_stock_sql = "SELECT a.code, a.name, a.market FROM etf_fund as a WHERE a.delist_date IS NULL"
         self.dict_cursor.execute(query_stock_sql)
 
         results = self.dict_cursor.fetchall()
