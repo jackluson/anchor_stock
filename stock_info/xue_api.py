@@ -284,6 +284,6 @@ class ApiXueqiu(BaseApiConfig):
             if '成立日：' in td.text:
                 etf_info['found_date'] = td.span.text
             elif '到期日：' in td.text and '--' not in td.span.text:
-                print(td.getText(), td.span.text)
+                print(symbol, td.getText(), td.span.text)
                 etf_info['delist_date'] = td.span.text
         return etf_info
