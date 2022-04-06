@@ -216,7 +216,7 @@ class ApiXueqiu(BaseApiConfig):
         begin_timestamp = dateutil.parser.parse(begin).timestamp()
         end_timestamp = dateutil.parser.parse(end).timestamp()
         payload = {
-            'symbol': symbol,
+            'symbol': symbol.upper(),
             'type': 'before',
             'period': period,
             # JavaScript时间戳 = python时间戳 * 1000
@@ -256,7 +256,7 @@ class ApiXueqiu(BaseApiConfig):
             # print(symbol)
             return df
         try:
-            df = df[['timestamp', 'open', 'close', 'chg',
+            df = df[['timestamp', 'open', 'close', 'low', 'high', 'chg',
                      'percent', 'volume', 'amount']]
             df['timestamp'] = df['timestamp'] / 1000
             df['timestamp'] = pd.to_datetime(

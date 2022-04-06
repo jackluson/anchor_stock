@@ -7,7 +7,6 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2021 Camel Lu
 '''
-from datetime import datetime
 import logging
 from apscheduler.schedulers.blocking import BlockingScheduler
 from controller.store_industry import store_industry
@@ -15,9 +14,12 @@ from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
 from controller.stock_valuation_calculate import stock_valuation_calculate
-from controller.stock_period_gain_calculate import AssetCalculator
+from controller.asset_calculator import AssetCalculator
 from controller.store_etf import store_etf
 from controller.store_etf import store_etf
+from controller.reversal_maxdrawdown import DrawdownCalculator, BatchDrawdownList, IndicatorCalculator
+from calculate.correlated import Correlator
+from strategy.momentum import MomentumStrategy
 
 
 def store_stock_industry_and_daily():
@@ -49,7 +51,7 @@ def main():
         5.“财务指标”\n \
         6.“A股估值”\n \
         7.入库ETF\n \
-        8.股票/ETF收益计算\n \
+        8.市场指数/ETF近期收益计算\n \
     输入：")
     if input_value == '1' or input_value == '行业':
         store_industry()  # 执行申万行业信息入库
@@ -69,21 +71,52 @@ def main():
         stock_valuation_calculate()  # 入库股票财报关键指标信息
     elif input_value == '7' or input_value == '入库ETF':
         store_etf()  # 入库ETF
-    elif input_value == '8' or input_value == '股票/ETF收益计算':
+    elif input_value == '8' or input_value == '市场指数/ETF近期收益计算':
         etf_gain = AssetCalculator({
             'is_year': 1,
-            'count': 6,
-            'day_10_ago': 1,
-            'day_20_ago': 0,
-            'day_60_ago': 1,
+            'count': 10,
+            'day_10_before': 1,
+            'day_20_before': 1,
+            'day_30_before': 1,
+            'day_60_before': 1,
             'type': 'etf',  # index or etf
-            'markdown': 0
+            'markdown': 1
         })
-        etf_gain.format_params({
-            'date': '2022-01-27',
-            'freq': 'W',  # Y,Q,M,W,D
-        }).calculate().output()  # ETF收益计算
+        etf_gain.set_date({
+            # 'date': '2022-03-29',
+            'freq': 'D',  # Y,Q,M,W,D
+        })
+        etf_gain.calculate().output()  # ETF收益计算
 
 
 if __name__ == '__main__':
-    main()
+    is_main = 0
+    if is_main:
+        main()
+    else:
+        # max_drawdown_calculator = DrawdownCalculator('SH000001')
+        # BatchDrawdownList()
+        # IndicatorCalculator('SZ159981', '能源化工ETF')
+        # correlator = Correlator([
+        #     {
+        #         'symbol': 'SH000300',
+
+        #         'name': 'SH000300'
+        #     },
+        #     {
+        #         'symbol': 'SZ159769',
+        #         'name': 'SZ159769'
+        #     },
+        #     {
+        #         'symbol': 'SH512880',
+        #         'name': 'SH512880'
+        #     },
+        #     {
+        #         'symbol': 'SH515700',
+        #         'name': 'SH515700'
+        #     }
+        # ])
+        # similarity = correlator.correlate()
+        # print("similarity", similarity)
+        # filter_near_similarity()
+        strategy = MomentumStrategy('2021-01-01', '2021-12-31').traverse().predict()

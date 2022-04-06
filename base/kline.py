@@ -1,8 +1,10 @@
 import pandas as pd
 from stock_info.xue_api import ApiXueqiu
 import logging
+from  .__init__ import *
 
-
+save_begin_date = '2011-12-30'
+save_end_date = '2022-04-01'
 class Kline:
     def __init__(self, symbol, name):
         self.date = None
@@ -15,24 +17,24 @@ class Kline:
 
     def format_params(self, params, is_self=True):
         date = params.get('date') if params.get('date') else self.date
-        freq = self.freq
-        if date:
+        freq = params.get('freq')
+        params = {
+            'period': 'day',
+            **params,
+        }
+        if date and freq:
+            self.date = date
             ts = pd.Timestamp(date)
-            freq = params.get('freq')
             res = ts.to_period(freq=freq)
             begin_date = res.start_time.strftime('%Y-%m-%d')
             end_date = res.end_time.strftime('%Y-%m-%d')
             params = {
-                'period': 'day',
                 **params,
                 'begin_date': begin_date,
                 'end_date': end_date,
             }
+
         if is_self:
-            # 覆盖默认值
-            if date:
-                self.date = date
-            self.freq = freq
             self.params = params
             return self
         return params
@@ -41,28 +43,55 @@ class Kline:
         begin_date = self.params.get('begin_date')
         end_date = self.params.get('end_date')
         period = self.params.get('period')
-        df_stock_kline_info = self.each_api.get_kline_info(
-            self.symbol, begin_date, end_date, period)
+        filename = "./archive_data/csv/" + self.symbol + '_'  + save_begin_date + '_' + save_end_date + '_' + period + '.csv'
+        is_in_date = pd.Timestamp(end_date).timestamp() <= pd.Timestamp(save_end_date).timestamp() and pd.Timestamp(begin_date).timestamp() >= pd.Timestamp(save_begin_date).timestamp()
+
+        if os.path.exists(filename) and is_in_date :
+            df_stock_kline_info = pd.read_csv(filename, index_col=['date'], parse_dates=['date'])
+            # print("df_stock_kline_info", df_stock_kline_info)
+            try:
+                df = df_stock_kline_info.loc[begin_date:end_date]
+                self.df_kline = df
+                return
+            except:
+                print('date', begin_date, end_date,'匹配不到数据')
+                df_stock_kline_info = self.each_api.get_kline_info(
+                self.symbol, begin_date, end_date, period)
+        else:
+            line = f'该ETF请求{self.name}--{self.symbol}kline数据:--{begin_date}--{end_date}'
+            logging.info(line)
+            df_stock_kline_info = self.each_api.get_kline_info(
+                self.symbol, begin_date, end_date, period)
         if df_stock_kline_info.empty:
-            line = f'该ETF{self.name}--{self.symbol}没有查到数据'
+            line = f'该ETF{self.name}--{self.symbol}没有查到数据--{begin_date}--{end_date}'
             logging.info(line)
             self.df_kline = df_stock_kline_info
             return
         df_stock_kline_info['date'] = df_stock_kline_info.index.date
         df_stock_kline_info = df_stock_kline_info.set_index('date')
+        filename = "./archive_data/csv/" + self.symbol + '_'  + begin_date + '_' + end_date + '_' + period + '.csv'
+        df_stock_kline_info.to_csv(filename)
         self.df_kline = df_stock_kline_info
 
-    def calculate_period_percent(self, is_format_str=False):
-        try:
-            # percent = df_stock_kline_info.loc[pd.Timestamp.date(
-            #     datetime.fromisoformat(tail_date))]['percent']
-            first_net = self.df_kline.loc[self.df_kline.index[0]]['close']
-            first_chg = self.df_kline.loc[self.df_kline.index[0]]['chg']
-            first_net = first_net - first_chg
-            last_net = self.df_kline.loc[self.df_kline.index[-1]]['close']
-            percent = round((last_net - first_net)/first_net*100, 2)
-            if percent and is_format_str:
-                percent = str(percent) + '%'
-            return percent
-        except:
-            print(self.df_kline)
+    def calculate_period_percent(self, before_day_count=None, is_format_str=False):
+        if(self.df_kline.empty):
+            print(self.symbol, 'K线数据为空:', self.df_kline)
+            return None
+        # percent = df_stock_kline_info.loc[pd.Timestamp.date(
+        #     datetime.fromisoformat(tail_date))]['percent']
+        start_net = self.df_kline.loc[self.df_kline.index[0]]['close']
+        start_chg = self.df_kline.loc[self.df_kline.index[0]]['chg']
+        if before_day_count and len(self.df_kline) > before_day_count:
+            start_net = self.df_kline.iloc[-(before_day_count)]['close']
+            start_chg = self.df_kline.iloc[-(before_day_count)]['chg']
+        start_net = start_net - start_chg
+        last_net = self.df_kline.loc[self.df_kline.index[-1]]['close']
+        percent = round((last_net - start_net)/start_net*100, 2)
+        if percent and is_format_str:
+            percent = str(percent) + '%'
+        return percent
+
+    def get_past_mean(self, dimension, before_days=5, round_num=3):
+        if self.df_kline.empty:
+            return None
+        return self.df_kline[dimension].tail(before_days).mean().round(round_num)
