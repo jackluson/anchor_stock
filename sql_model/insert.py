@@ -52,6 +52,15 @@ class StockInsert(BaseSqlModel):
         self.cursor.execute(stock_sql_insert,
                             tuple([snowflaw_id, *stock_dict.values()]))
         self.connect.commit()
+    
+    def insert_stock_profile(self, profile_dict):
+        # 入库股票简介数据
+        snowflaw_id = self.IdWorker.get_id()
+        stock_sql_insert = self.generate_insert_sql(
+            profile_dict, 'stock_profile', ['id'])
+        self.cursor.execute(stock_sql_insert,
+                            tuple([snowflaw_id, *profile_dict.values()]))
+        self.connect.commit()
 
     @lock_process
     def insert_stock_daily_data(self, stock_dict):

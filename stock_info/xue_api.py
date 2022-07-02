@@ -272,6 +272,8 @@ class ApiXueqiu(BaseApiConfig):
         return df
 
     def get_stock_page_info(self, symbol):
+        """ 获取ETF到期时间等基本信息
+        """
         url = "https://xueqiu.com/S/{}".format(symbol)
         headers = self.get_client_headers()
         res = requests.get(url, headers=headers)
@@ -287,3 +289,32 @@ class ApiXueqiu(BaseApiConfig):
                 print(symbol, td.getText(), td.span.text)
                 etf_info['delist_date'] = td.span.text
         return etf_info
+    
+    def get_stock_profile_info(self, code):
+        """ 获取公司简介信息
+        """
+        symbol = get_symbol_by_code(code)
+        payload = {
+            'symbol': symbol.upper(),
+        }
+        url = "https://stock.xueqiu.com/v5/stock/f10/cn/company.json?symbol={symbol}".format(
+            **payload)
+        headers = self.get_client_headers()
+        # print("headers", headers)
+        res = requests.get(url, headers=headers)
+        try:
+            if res.status_code == 200:
+                res_json = res.json()
+                info = res_json.get('data').get('company')
+                if not info:
+                    line = f'该{symbol}--没有简介信息'
+                    logging.warning(line)
+                return info
+            else:
+                print('请求异常', res, symbol)
+                line = f'该ETF{symbol}{res}--api数据有误'
+                logging.error(line)
+                
+        except:
+            line = f'该ETF{symbol}--api数据有误'
+            logging.error(line)

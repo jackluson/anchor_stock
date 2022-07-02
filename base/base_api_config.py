@@ -9,11 +9,14 @@ Copyright (c) 2021 Camel Lu
 '''
 
 import json
+import logging
 from dotenv import load_dotenv
 
 
 class BaseApiConfig:
     def __init__(self):
+        logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                            filename='log/api.log',  filemode='a', level=logging.INFO)
         load_dotenv()
 
     def get_client_headers(self, *,  cookie_env_key="xue_qiu_cookie", referer="https://xueqiu.com"):
