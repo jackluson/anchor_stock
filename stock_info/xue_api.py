@@ -306,15 +306,15 @@ class ApiXueqiu(BaseApiConfig):
             if res.status_code == 200:
                 res_json = res.json()
                 info = res_json.get('data').get('company')
-                if not info:
+                if not info or not info['org_short_name_cn']:
                     line = f'该{symbol}--没有简介信息'
                     logging.warning(line)
                 return info
             else:
                 print('请求异常', res, symbol)
-                line = f'该ETF{symbol}{res}--api数据有误'
+                line = f'该股票{symbol}{res}--api数据有误'
                 logging.error(line)
                 
         except:
-            line = f'该ETF{symbol}--api数据有误'
+            line = f'该股票{symbol}--api数据有误'
             logging.error(line)
