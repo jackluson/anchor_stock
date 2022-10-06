@@ -3,3 +3,6 @@ PyMySQL==1.0.2
 selenium==3.11.0
 requests==2.18.4
 python-dotenv==0.19.0
+matplotlib==3.5.3
+apscheduler==3.9.1
+tabulate==0.8.10

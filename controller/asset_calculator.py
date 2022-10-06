@@ -30,6 +30,8 @@ class AssetCalculator:
         self.__type = config.get('type')
         self.__freq = 'D'
         self.__date = datetime.now().strftime("%Y-%m-%d")
+        self.mean_day = config.get('mean_day')
+        self.second_mean_day = config.get('second_mean_day')
         self.__before_day = None
         self.filter_found_date = config.get('filter_found_date')
         self.__init_data()
@@ -86,12 +88,18 @@ class AssetCalculator:
     def calculate(self):
         for index, etf_item in self.df_data.iterrows():
             symbol = etf_item.get('market').upper() + etf_item.get('code')
+            print("symbol", symbol)
             name = etf_item.get('name')
             kline_res = self.calculate_kline(
                 symbol, name, None, False, False)
-            self.df_data.at[index, 'percent'] = kline_res[0]
-            self.df_data.at[index, 'avg_volume'] = kline_res[1]
-            self.df_data.at[index, 'avg_amount'] = kline_res[2]
+            self.df_data.at[index, 'percent'] = kline_res['percent']
+            self.df_data.at[index, 'cur_close'] = kline_res['cur_close']
+            if self.mean_day:
+                self.df_data.at[index, 'avg_volume'] = kline_res['avg_volume']
+                self.df_data.at[index, 'avg_amount'] = kline_res['avg_amount']
+                self.df_data.at[index, 'avg_price'] = kline_res['avg_price']
+            if self.second_mean_day:
+                self.df_data.at[index, 'avg_second_price'] = kline_res['avg_second_price']
         self.df_data.dropna(subset=['percent'], inplace=True)
         self.df_data.sort_values(
             by='percent', inplace=True, ascending=False, ignore_index=True)
@@ -103,11 +111,21 @@ class AssetCalculator:
         kline.format_params(params)
         kline.get_kline_data()
         percent = kline.calculate_period_percent(self.__before_day, is_format_str)
-        if(is_only_percent):
-            return [percent]
-        mean_volume = kline.get_past_mean('volume', 5)
-        mean_amount = kline.get_past_mean('amount', 5)
-        return [percent, mean_volume, mean_amount]
+        res = {}
+        res['percent'] = percent
+        if kline.df_kline.empty:
+            res['cur_close'] = 0
+        else:
+            res['cur_close'] = kline.df_kline.iloc[-1]['close']
+        mean_day = self.mean_day
+        if mean_day:
+            res['avg_volume'] = kline.get_past_mean('volume', mean_day)
+            res['avg_amount'] = kline.get_past_mean('amount', mean_day)
+            res['avg_price'] = kline.get_past_mean('close', mean_day)
+        second_mean_day = self.second_mean_day
+        if second_mean_day:
+            res['avg_second_price'] = kline.get_past_mean('close', second_mean_day)
+        return res
 
     def affix_date_percent_date(self, ago, etf_item):
         symbol = etf_item.get('market').upper() + etf_item.get('code')
@@ -120,7 +138,9 @@ class AssetCalculator:
             'begin_date': begin_date,
             'end_date': self.__date,
         }
-        return self.calculate_kline(symbol, name, ago_params, True, True)[0]
+        res = self.calculate_kline(
+            symbol, name, ago_params, True, True)
+        return res['percent']
 
     def append_before_data(self, init_df=None):
         df = self.df_data
@@ -132,7 +152,7 @@ class AssetCalculator:
             'percent': self.get_column_label(self.__date, self.__freq),
             'year_percent': self.get_column_label(self.__date, 'Y'),
         }
-        for ago in before_list:
+        for ago in const.before_list:
             if getattr(self, "day_" + str(ago) + "_before"):
                 ago_key = 'day_' + str(ago) + '_before_percent'
                 columns[ago_key] = '近' + str(ago) + '天'
@@ -153,10 +173,8 @@ class AssetCalculator:
                     'end_date': end_date,
                 }
                 df.at[index, 'year_percent'] = self.calculate_kline(
-                    symbol, name, year_params, True, True)[0]
+                    symbol, name, year_params, True, True)['percent']
         df['percent'] = df['percent'].astype(str) + '%'
-        # print("df", df)
-        # Correlator(df).correlate()
         df.drop('market', axis=1, inplace=True)
         df.rename(columns=columns, inplace=True)
         df.set_index("证券名称", inplace=True)
