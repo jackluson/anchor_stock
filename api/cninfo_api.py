@@ -1,7 +1,6 @@
 '''
 Desc: 巨潮资讯API
 File: /cninfo_api.py
-Project: stock_info
 File Created: Friday, 3rd September 2021 10:53:17 am
 Author: luxuemin2108@gmail.com
 -----

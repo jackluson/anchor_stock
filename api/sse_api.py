@@ -1,7 +1,6 @@
 '''
 Desc: 上海证券交易所api
 File: /sse_api.py
-Project: stock_info
 File Created: Monday, 6th December 2021 9:20:01 pm
 Author: luxuemin2108@gmail.com
 -----

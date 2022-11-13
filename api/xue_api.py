@@ -1,7 +1,6 @@
 '''
 Desc: 雪球API数据
 File: /xue_api.py
-Project: stock_info
 File Created: Friday, 3rd September 2021 10:41:00 am
 Author: luxuemin2108@gmail.com
 -----
@@ -239,11 +238,11 @@ class ApiXueqiu(BaseApiConfig):
                 print('请求异常', res, symbol)
                 line = f'该ETF{symbol}{res}--api数据有误'
                 logging.error(line)
-                return pd.DataFrame(items, columns=[])
+                return pd.DataFrame([], columns=[])
         except:
             line = f'该ETF{symbol}--api数据有误'
             logging.error(line)
-            return pd.DataFrame(items, columns=[])
+            return pd.DataFrame([], columns=[])
             # raise ('中断')
 
         columns = res_json["data"]["column"]

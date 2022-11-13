@@ -1,7 +1,6 @@
 '''
 Desc:
 File: /baostock_api.py
-Project: stock_info
 File Created: Sunday, 5th December 2021 8:15:35 pm
 Author: luxuemin2108@gmail.com
 -----
