@@ -13,14 +13,15 @@ from sql_model.query import StockQuery
 from base.kline import Kline
 import pandas as pd
 from utils.file_op import update_xlsx_file
+from utils.index import get_symbol_by_code
 from utils.constant import const 
 import logging
 
-class AssetCalculator:
+class AssetCalculatorSt:
 
     def __init__(self, config={}):
         logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                            filename='log/stock_etf_info.log',  filemode='a', level=logging.INFO)
+                            filename='log/stock_st_info.log',  filemode='a', level=logging.INFO)
         for ago in const.before_list:
             ago_key = 'day_' + str(ago) + '_before'
             # self[ago_key] = config.get(ago_key)
@@ -38,26 +39,22 @@ class AssetCalculator:
         self.__init_data()
 
     def __init_data(self):
-        if self.__type == 'etf':
-            each_query = StockQuery()
-            etf_funds = each_query.query_etf(self.filter_found_date)
-            self.df_data = pd.DataFrame(etf_funds)
-        elif self.__type == 'index':
-            self.df_data = pd.DataFrame(const.index_stock_list)
+        each_query = StockQuery()
+        all_st_stocks = each_query.query_stock_with_st()
+        self.df_data = pd.DataFrame(all_st_stocks)
 
     def set_date(self, params):
         date = params.get('date') if params.get('date') else self.__date
         freq = params.get('freq') if params.get('freq') else self.__freq
         before_day = params.get('before_day')
-        begin_date = params.get('begin_date')
-        end_date = params.get('end_date')
+        begin_date = None
         if before_day:
             ts = pd.Timestamp(date).timestamp()
             begin_date = datetime.fromtimestamp(
                 ts - (before_day + 30) * 24 * 3600).strftime("%Y-%m-%d")
             end_date = date
             self.__before_day = before_day
-        elif freq and not end_date:
+        elif freq:
             res = pd.Timestamp(date).to_period(freq=freq)
             begin_date = res.start_time.strftime('%Y-%m-%d')
             end_date = res.end_time.strftime('%Y-%m-%d')
@@ -85,15 +82,14 @@ class AssetCalculator:
             label = date + '(该季度)'
         elif (freq == 'W'):
             label = "本周" + "("+begin_date + '一' + end_date + ')'
-        elif begin_date != end_date:
-            label = begin_date + '一' + end_date
         return label
 
     def calculate(self):
-        for index, etf_item in self.df_data.iterrows():
-            symbol = etf_item.get('market').upper() + etf_item.get('code')
+        for index, stock_item in self.df_data.iterrows():
+            stock_code = stock_item.get('stock_code')
+            symbol = get_symbol_by_code(stock_code)
             # print("symbol", symbol)
-            name = etf_item.get('name')
+            name = stock_item.get('stock_name')
             kline_res = self.calculate_kline(
                 symbol, name, None, False, False)
             self.df_data.at[index, 'percent'] = kline_res['percent']
@@ -131,9 +127,10 @@ class AssetCalculator:
             res['avg_second_price'] = kline.get_past_mean('close', second_mean_day)
         return res
 
-    def affix_date_percent_date(self, ago, etf_item):
-        symbol = etf_item.get('market').upper() + etf_item.get('code')
-        name = etf_item.get('name')
+    def affix_date_percent_date(self, ago, stock_item):
+        stock_code = stock_item.get('stock_code')
+        symbol = get_symbol_by_code(stock_code)
+        name = stock_item.get('stock_name')
         ts = pd.Timestamp(self.__date).timestamp()
         begin_date = datetime.fromtimestamp(
             ts - ago * 24 * 3600).strftime("%Y-%m-%d")
@@ -151,8 +148,12 @@ class AssetCalculator:
         if isinstance(init_df, pd.DataFrame) and not init_df.empty:
             df = init_df.copy()
         columns = {
-            "code": "证券代码",
-            "name": "证券名称",
+            "stock_code": "证券代码",
+            "stock_name": "证券名称",
+            "org_name": "公司名称",
+            "actual_controller": "实际控制人",
+            "classi_name": "企业类型",
+            "main_operation_business": "主营业务",
             'percent': self.get_column_label(self.__date, self.__freq),
             'year_percent': self.get_column_label(self.__date, 'Y'),
         }
@@ -160,13 +161,14 @@ class AssetCalculator:
             if getattr(self, "day_" + str(ago) + "_before"):
                 ago_key = 'day_' + str(ago) + '_before_percent'
                 columns[ago_key] = '近' + str(ago) + '天'
-                for index, etf_item in df.iterrows():
+                for index, stock_item in df.iterrows():
                     df.at[index, ago_key] = self.affix_date_percent_date(
-                        ago, etf_item)
+                        ago, stock_item)
         if self.is_year:
-            for index, etf_item in df.iterrows():
-                symbol = etf_item.get('market').upper() + etf_item.get('code')
-                name = etf_item.get('name')
+            for index, stock_item in df.iterrows():
+                stock_code = stock_item.get('stock_code')
+                symbol = get_symbol_by_code(stock_code)
+                name = stock_item.get('stock_name')
                 ts = pd.Timestamp(self.__date)
                 res = ts.to_period(freq='Y')
                 begin_date = res.start_time.strftime('%Y-%m-%d')
@@ -179,10 +181,13 @@ class AssetCalculator:
                 df.at[index, 'year_percent'] = self.calculate_kline(
                     symbol, name, year_params, True, True)['percent']
         df['percent'] = df['percent'].astype(str) + '%'
-        df.drop('market', axis=1, inplace=True)
         df.drop('cur_close', axis=1, inplace=True)
         df.rename(columns=columns, inplace=True)
-        df.set_index("证券名称", inplace=True)
+        # df.set_index("证券名称", inplace=True)
+        # if self.markdown:
+        #     print(df.to_markdown())
+        # else:
+        #     print(df)
         return df
 
     def ouputRank(self):
@@ -196,34 +201,25 @@ class AssetCalculator:
         else:
             print(df_top_full)
         file_prefix = self.get_column_label(self.__date, self.__freq)
-        path = './outcome/index/' + file_prefix + '_etf.xlsx'
-        update_xlsx_file(path, df_top_full, 'top')
+        path = './outcome/st/' + file_prefix + '_st.xlsx'
+        update_xlsx_file(path, df_top_full, '涨幅前20名', index=False)
         print('跌幅前{}名为:'.format(count))
         df_last_full = self.append_before_data(last_df)
         if self.markdown:
             print(df_last_full.to_markdown())
         else:
             print(df_last_full)
-        update_xlsx_file(path, df_last_full, 'tail')
+        update_xlsx_file(path, df_last_full, '跌幅前20名', index=False)
 
-    def output(self):
-        if self.__type == 'etf':
-            self.ouputRank()
-        elif self.__type == 'index':
-            df = self.append_before_data()
-            if self.markdown:
-                print(df.to_markdown())
-            else:
-                print(df)
 
 if __name__ == '__main__':
     # asset_calculator()
-    etf_gain = AssetCalculator({
+    etf_gain = AssetCalculatorSt({
         'is_year': 1,
-        'type': 'etf',  # index or etf
+        'type': 'st',  # index or etf
         'markdown': 1
     })
     etf_gain.set_date({
-        'date': '2022-01-18',
+        # 'date': '2022-01-18',
         'freq': 'D',
     }).calculate().output()

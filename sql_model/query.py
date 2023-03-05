@@ -25,14 +25,20 @@ class StockQuery(BaseSqlModel):
         return results
 
     def query_all_stock(self, date=None):
-        print("date", date)
         if date == None:
-            query_stock_sql = "SELECT stock_code FROM stock_industry"
+            query_stock_sql = "SELECT stock_code, stock_name FROM stock_industry WHERE delist_status IS NULL"
             self.dict_cursor.execute(query_stock_sql)
         else:
             query_stock_sql = "SELECT stock_code FROM stock_industry as a WHERE a.stock_code NOT IN ( SELECT b.`code` FROM stock_daily_info AS b WHERE b.`timestamp` = %s )"
             self.dict_cursor.execute(query_stock_sql, [date])
 
+        results = self.dict_cursor.fetchall()
+        return results
+
+    def query_stock_with_st(self, date=None):
+        query_stock_sql = "SELECT t.stock_code, t.stock_name, t1.org_name, t1.actual_controller, t1.classi_name, t1.main_operation_business FROM stock_industry as t \
+LEFT JOIN stock_profile as t1 ON t.stock_code = t1.stock_code WHERE t.delist_status IS NULL AND t.stock_name LIKE '%ST%' AND t.stock_name NOT LIKE '%B%' AND t.delist IS NULL"
+        self.dict_cursor.execute(query_stock_sql)
         results = self.dict_cursor.fetchall()
         return results
 

@@ -6,3 +6,4 @@ python-dotenv==0.19.0
 matplotlib==3.5.3
 apscheduler==3.9.1
 tabulate==0.8.10
+baostock==0.8.8

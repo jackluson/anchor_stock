@@ -1,7 +1,6 @@
 '''
 Desc: 用接口获取股票信息
 File: /base_api_config.py
-Project: stock_info
 File Created: Friday, 11th June 2021 1:58:37 pm
 Author: luxuemin2108@gmail.com
 -----

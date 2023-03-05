@@ -18,6 +18,14 @@ from base.base_api_config import BaseApiConfig
 from utils.file_op import write_fund_json_data
 from utils.index import get_symbol_by_code, get_request_header_key
 
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+session = requests.Session()
+retry = Retry(connect=3, backoff_factor=0.5)
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 class ApiXueqiu(BaseApiConfig):
     def __init__(self):
@@ -43,7 +51,7 @@ class ApiXueqiu(BaseApiConfig):
             url = "https://stock.xueqiu.com/v5/stock/quote.json?symbol={0}&extend=detail".format(
                 symbol)
             headers = self.get_client_headers()
-            res = requests.get(url, headers=headers)
+            res = session.get(url, headers=headers)
             try:
                 if res.status_code == 200:
                     res_json = res.json()
@@ -111,7 +119,7 @@ class ApiXueqiu(BaseApiConfig):
         url = "https://stock.xueqiu.com/v5/stock/finance/cn/indicator.json?symbol={symbol}&type={type}&is_detail=true&count={count}&timestamp={timestamp}".format(
             **payload)
         headers = self.get_client_headers()
-        res = requests.get(url, headers=headers)
+        res = session.get(url, headers=headers)
         try:
             if res.status_code == 200:
                 res_json = res.json().get('data')
@@ -211,25 +219,35 @@ class ApiXueqiu(BaseApiConfig):
         except:
             raise('中断')
 
-    def get_kline_info(self, symbol, begin, end, period):
+    def get_kline_info(self, symbol, begin, period, *, type = 'before', rest = dict()):
         begin_timestamp = dateutil.parser.parse(begin).timestamp()
-        end_timestamp = dateutil.parser.parse(end).timestamp()
+        if rest.get('end'):
+            end = rest.get('end')
+            end_timestamp = dateutil.parser.parse(end).timestamp()
+            rest['end'] = int(end_timestamp * 1000)
         payload = {
             'symbol': symbol.upper(),
-            'type': 'before',
             'period': period,
+            'type': type,
             # JavaScript时间戳 = python时间戳 * 1000
             'begin': int(begin_timestamp * 1000),
-            'end': int(end_timestamp * 1000),
-            'indicator': 'kline,pe,pb,ps,pcf,market_capital,agt,ggt,balance'
+            'indicator': 'kline,pe,pb,ps,pcf,market_capital,agt,ggt,balance',
+            # 'end': int(end_timestamp * 1000),
+            **rest
             # 'count': 181,
             # 'timestamp': timestamp,
         }
-        url = "https://stock.xueqiu.com/v5/stock/chart/kline.json?symbol={symbol}&begin={begin}&end={end}&period={period}&type={type}&indicator={indicator}".format(
+        params_template = ''
+        for filed in payload.keys():
+            if params_template:
+                params_template += '&'
+            params_template = params_template + filed + '={' + filed + '}'
+        print('print', payload)
+        url = ("https://stock.xueqiu.com/v5/stock/chart/kline.json?" + params_template).format(
             **payload)
         headers = self.get_client_headers()
         # print("headers", headers)
-        res = requests.get(url, headers=headers)
+        res = session.get(url, headers=headers)
         res_json = {}
         try:
             if res.status_code == 200:
@@ -275,7 +293,7 @@ class ApiXueqiu(BaseApiConfig):
         """
         url = "https://xueqiu.com/S/{}".format(symbol)
         headers = self.get_client_headers()
-        res = requests.get(url, headers=headers)
+        res = session.get(url, headers=headers)
         if res.status_code != 200:
             return None
         soup = BeautifulSoup(res.text, 'lxml')
@@ -300,7 +318,7 @@ class ApiXueqiu(BaseApiConfig):
             **payload)
         headers = self.get_client_headers()
         # print("headers", headers)
-        res = requests.get(url, headers=headers)
+        res = session.get(url, headers=headers)
         try:
             if res.status_code == 200:
                 res_json = res.json()
