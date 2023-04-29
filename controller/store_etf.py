@@ -12,37 +12,29 @@ from time import time
 import numpy as np
 import pandas as pd
 from sql_model.insert import StockInsert
-from stock_info.sse_api import ApiSSE
-from stock_info.szse_api import ApiSZSE
-from stock_info.xue_api import ApiXueqiu
+from api.sse_api import ApiSSE
+from api.szse_api import ApiSZSE
+from api.xue_api import ApiXueqiu
 
 def batch_insert_etf(df):
     f_fund_list = df.replace({'': None})
     each_insert = StockInsert()
     each_insert.batch_insert_etf_fund(f_fund_list.values.tolist())
 
-def store_sse_etf(api_xue_qiu):
+def store_sse_etf(api_xue_qiu:ApiXueqiu):
     each_api = ApiSSE()
     subClass_list = [
         {
-            'name': '单市场ETF',
+            'name': '单市场ETF', # 沪,科创板
             'code': '01'
         },
         {
-            'name': '跨市场ETF',
-            'code': '03,08'
+            'name': '跨市场(沪深京)ETF', #沪深京
+            'code': '03'
         },
         {
-            'name': '跨境ETF',
-            'code': '04'
-        },
-        {
-            'name': '债券',
-            'code': '02'
-        },
-        {
-            'name': '黄金ETF',
-            'code': '06'
+            'name': '跨市场(沪港深京)ETF',
+            'code': '08'
         },
         {
             'name': '单市场科创板ETF',
@@ -51,11 +43,27 @@ def store_sse_etf(api_xue_qiu):
         {
             'name': '跨市场科创板ETF',
             'code': '31'
-        }
+        },
+        {
+            'name': '单市场债券ETF', #单市场,
+            'code': '02'
+        },
+        {
+            'name': '现金申赎类债券ETF', #现金申赎类
+            'code': '37'
+        },
+        {
+            'name': '跨境ETF',
+            'code': '33'
+        },
+        {
+            'name': '黄金ETF',
+            'code': '06'
+        },
     ]
     for subClass in subClass_list:
-        code = subClass.get('code')
-        fund_list = each_api.get_etf_fund_list(subClass=code)
+        subClass = subClass.get('code')
+        fund_list = each_api.get_etf_fund_list(subClass=subClass)
         columns = [
             'id',
             'fundCode',
@@ -85,7 +93,7 @@ def store_sse_etf(api_xue_qiu):
         #     json.dump(fund_list.get('result'), f, ensure_ascii=False, indent=2)
 
 
-def store_szse_etf(api_xue_qiu):
+def store_szse_etf(api_xue_qiu: ApiXueqiu):
     each_api = ApiSZSE()
     cur_page = 1
     fund_list = each_api.get_etf_fund_list(cur_page, cur_page)
@@ -93,6 +101,7 @@ def store_szse_etf(api_xue_qiu):
     nets_items = fund_list[1].get('data')
     metadata = fund_list[0].get('metadata')
     page_count = metadata.get('pagecount')
+    # 全部请求两个表数据回来再处理
     for page in range(2, page_count+1):
         cur_fund_list = each_api.get_etf_fund_list(page, page)
         cur_etf_items = cur_fund_list[0].get('data')
@@ -115,7 +124,7 @@ def store_szse_etf(api_xue_qiu):
     df_etf = pd.DataFrame(etf_items, columns=columns)
     df_etf.fillna('', inplace=True)
     df_nets = pd.DataFrame(nets_items)
-    df_nets = df_nets.set_index('jjdm')
+    df_nets = df_nets.set_index('fund_code')
     # df_etf = df_etf[[*, 'sys_key', 'dqgm', 'glrmc', 'nhzs']]
     df_etf['sys_key'] = df_etf['sys_key'].str.slice(-14, -8)
     for index, etf_item in df_etf.iterrows():
@@ -124,9 +133,9 @@ def store_szse_etf(api_xue_qiu):
         df_etf.at[index, 'id'] = id
         code = etf_item['sys_key']
         index_info = etf_item['nhzs']
-        jjjc = df_nets.loc[code]['jjjc']
+        security_short_name = df_nets.loc[code]['security_short_name']
         # jjjz = df_nets.loc[code]['jjjz']
-        df_etf.at[index, 'fundAbbr'] = jjjc
+        df_etf.at[index, 'fundAbbr'] = security_short_name
         # df_etf.at[index, '基金净值'] = jjjz
         index_code = ''
         index_name = ''
@@ -152,8 +161,8 @@ def store_szse_etf(api_xue_qiu):
 
 def store_etf():
     api_xue_qiu = ApiXueqiu()
-    store_sse_etf(api_xue_qiu)
-    # store_szse_etf(api_xue_qiu)
+    store_sse_etf(api_xue_qiu) # 上交所
+    store_szse_etf(api_xue_qiu) # 深交所
 
 
 if __name__ == '__main__':

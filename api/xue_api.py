@@ -38,6 +38,7 @@ class ApiXueqiu(BaseApiConfig):
             xue_qiu_cookie = get_request_header_key(
                 entry_url, host, header_key)
             self.xue_qiu_cookie = xue_qiu_cookie
+        self.set_client_headers()
 
     def get_special_stock_quote(self, code, date=None):
         symbol = get_symbol_by_code(code)
@@ -50,8 +51,8 @@ class ApiXueqiu(BaseApiConfig):
         else:
             url = "https://stock.xueqiu.com/v5/stock/quote.json?symbol={0}&extend=detail".format(
                 symbol)
-            headers = self.get_client_headers()
-            res = session.get(url, headers=headers)
+            # headers = self.get_client_headers()
+            res = session.get(url, headers=self.headers)
             try:
                 if res.status_code == 200:
                     res_json = res.json()
@@ -118,8 +119,8 @@ class ApiXueqiu(BaseApiConfig):
         }
         url = "https://stock.xueqiu.com/v5/stock/finance/cn/indicator.json?symbol={symbol}&type={type}&is_detail=true&count={count}&timestamp={timestamp}".format(
             **payload)
-        headers = self.get_client_headers()
-        res = session.get(url, headers=headers)
+        # headers = self.get_client_headers()
+        res = session.get(url, headers=self.headers)
         try:
             if res.status_code == 200:
                 res_json = res.json().get('data')
@@ -242,12 +243,11 @@ class ApiXueqiu(BaseApiConfig):
             if params_template:
                 params_template += '&'
             params_template = params_template + filed + '={' + filed + '}'
-        print('print', payload)
         url = ("https://stock.xueqiu.com/v5/stock/chart/kline.json?" + params_template).format(
             **payload)
-        headers = self.get_client_headers()
+        # headers = self.get_client_headers()
         # print("headers", headers)
-        res = session.get(url, headers=headers)
+        res = session.get(url, headers=self.headers)
         res_json = {}
         try:
             if res.status_code == 200:
@@ -274,7 +274,7 @@ class ApiXueqiu(BaseApiConfig):
             return df
         try:
             df = df[['timestamp', 'open', 'close', 'low', 'high', 'chg',
-                     'percent', 'volume', 'amount']]
+                     'percent', 'volume', 'amount', 'market_capital']]
             df['timestamp'] = df['timestamp'] / 1000
             df['timestamp'] = pd.to_datetime(
                 df['timestamp'], unit='s', utc=True)
@@ -292,8 +292,8 @@ class ApiXueqiu(BaseApiConfig):
         """ 获取ETF到期时间等基本信息
         """
         url = "https://xueqiu.com/S/{}".format(symbol)
-        headers = self.get_client_headers()
-        res = session.get(url, headers=headers)
+        # headers = self.get_client_headers()
+        res = session.get(url, headers=self.headers)
         if res.status_code != 200:
             return None
         soup = BeautifulSoup(res.text, 'lxml')
@@ -316,9 +316,9 @@ class ApiXueqiu(BaseApiConfig):
         }
         url = "https://stock.xueqiu.com/v5/stock/f10/cn/company.json?symbol={symbol}".format(
             **payload)
-        headers = self.get_client_headers()
+        # headers = self.get_client_headers()
         # print("headers", headers)
-        res = session.get(url, headers=headers)
+        res = session.get(url, headers=self.headers)
         try:
             if res.status_code == 200:
                 res_json = res.json()
