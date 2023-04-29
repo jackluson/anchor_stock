@@ -18,7 +18,7 @@ class BaseApiConfig:
                             filename='log/api.log',  filemode='a', level=logging.INFO)
         load_dotenv()
 
-    def get_client_headers(self, *,  cookie_env_key="xue_qiu_cookie", referer="https://xueqiu.com"):
+    def set_client_headers(self, *,  cookie_env_key="xue_qiu_cookie", referer="https://xueqiu.com"):
         cookie = self.__dict__.get(cookie_env_key)
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
@@ -27,6 +27,7 @@ class BaseApiConfig:
             'Referer': referer,
             'Cookie': cookie
         }
+        self.headers= headers
         return headers
 
     def get_data_from_json(self, path):
