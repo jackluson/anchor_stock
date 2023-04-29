@@ -1,15 +1,17 @@
 import pandas as pd
-from stock_info.xue_api import ApiXueqiu
+from api.xue_api import ApiXueqiu
 import logging
 from  .__init__ import *
 
 save_begin_date = '2011-12-30'
 save_end_date = '2022-04-01'
+
+xueqiu_api = ApiXueqiu()
 class Kline:
     def __init__(self, symbol, name):
         self.date = None
         self.freq = 'D'
-        self.each_api = ApiXueqiu()
+        self.each_api = xueqiu_api
         self.symbol = symbol
         self.name = name
         logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
@@ -42,26 +44,42 @@ class Kline:
     def get_kline_data(self):
         begin_date = self.params.get('begin_date')
         end_date = self.params.get('end_date')
+        type = self.params.get('type')
+        count = self.params.get('count')
         period = self.params.get('period')
-        filename = "./archive_data/csv/" + self.symbol + '_'  + save_begin_date + '_' + save_end_date + '_' + period + '.csv'
-        is_in_date = pd.Timestamp(end_date).timestamp() <= pd.Timestamp(save_end_date).timestamp() and pd.Timestamp(begin_date).timestamp() >= pd.Timestamp(save_begin_date).timestamp()
-
-        if os.path.exists(filename) and is_in_date :
+        is_in_date = False
+        payload = dict()
+        if end_date:
+            filename = "./archive_data/csv/" + self.symbol + '_'  + begin_date + '_' + end_date + '_' + period + '.csv'
+            is_in_date = pd.Timestamp(end_date).timestamp() <= pd.Timestamp(end_date).timestamp() and pd.Timestamp(begin_date).timestamp() >= pd.Timestamp(begin_date).timestamp()
+            payload['end'] = end_date
+        elif type and count:
+            filename = "./archive_data/csv/" + self.symbol + '_'  + begin_date + '_' + type + '_' + str(count) + '_' + period + '.csv'
+            payload['count'] = count
+        if os.path.exists(filename):
             df_stock_kline_info = pd.read_csv(filename, index_col=['date'], parse_dates=['date'])
             # print("df_stock_kline_info", df_stock_kline_info)
             try:
-                df = df_stock_kline_info.loc[begin_date:end_date]
-                self.df_kline = df
+                if end_date:
+                    final_timestamp = df_stock_kline_info.index[-1]
+                    end_timestamp = pd.Timestamp(end_date)
+                    if final_timestamp >= end_timestamp:
+                        self.df_kline = df_stock_kline_info.loc[begin_date:end_date]
+                    else:
+                        self.df_kline = self.each_api.get_kline_info(self.symbol, begin_date, period, type = type, rest = payload)
+
+                else:
+                    self.df_kline = df_stock_kline_info
                 return
             except:
                 print('date', begin_date, end_date,'匹配不到数据')
                 df_stock_kline_info = self.each_api.get_kline_info(
-                self.symbol, begin_date, end_date, period)
+                self.symbol, begin_date, period, type = type, rest = payload)
         else:
             line = f'该ETF请求{self.name}--{self.symbol}kline数据:--{begin_date}--{end_date}'
             logging.info(line)
             df_stock_kline_info = self.each_api.get_kline_info(
-                self.symbol, begin_date, end_date, period)
+                self.symbol, begin_date, period, type = type, rest = payload)
         if df_stock_kline_info.empty:
             line = f'该ETF{self.name}--{self.symbol}没有查到数据--{begin_date}--{end_date}'
             logging.info(line)
@@ -69,7 +87,6 @@ class Kline:
             return
         df_stock_kline_info['date'] = df_stock_kline_info.index.date
         df_stock_kline_info = df_stock_kline_info.set_index('date')
-        filename = "./archive_data/csv/" + self.symbol + '_'  + begin_date + '_' + end_date + '_' + period + '.csv'
         df_stock_kline_info.to_csv(filename)
         self.df_kline = df_stock_kline_info
 

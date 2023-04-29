@@ -229,7 +229,7 @@ class ApiXueqiu(BaseApiConfig):
         payload = {
             'symbol': symbol.upper(),
             'period': period,
-            'type': type,
+            'type': 'before' if type == None else type, #默认前复权数据
             # JavaScript时间戳 = python时间戳 * 1000
             'begin': int(begin_timestamp * 1000),
             'indicator': 'kline,pe,pb,ps,pcf,market_capital,agt,ggt,balance',
@@ -299,10 +299,21 @@ class ApiXueqiu(BaseApiConfig):
         soup = BeautifulSoup(res.text, 'lxml')
         # print(soup.body.select('table.quote-info')[0].select('td'))
         etf_info = {}
+        delist_flag = False
+        for div in soup.body.select('.stock-flag'):
+            if '退市' in div.text:
+                delist_flag = True
+                break
+        if delist_flag:
+            etf_info['delist_date'] = 1
         for td in soup.body.select('table.quote-info')[0].select('td'):
             if '成立日：' in td.text:
                 etf_info['found_date'] = td.span.text
             elif '到期日：' in td.text and '--' not in td.span.text:
+                print(symbol, td.getText(), td.span.text)
+                etf_info['delist_date'] = td.span.text
+            #没有到期日去最新净值日期
+            elif etf_info.get('delist_date') and '净值日期' in td.text:
                 print(symbol, td.getText(), td.span.text)
                 etf_info['delist_date'] = td.span.text
         return etf_info
