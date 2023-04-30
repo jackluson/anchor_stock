@@ -9,7 +9,7 @@ Copyright (c) 2022 Camel Lu
 '''
 import time 
 from sql_model.query import StockQuery
-from stock_info.xue_api import ApiXueqiu
+from api.xue_api import ApiXueqiu
 from sql_model.insert import StockInsert
 
 def store_stock_proile():
@@ -17,14 +17,14 @@ def store_stock_proile():
     each_insert = StockInsert()
     each_query = StockQuery()
     all_stock = each_query.query_all_stock()
-    print('len(all_stock)', len(all_stock))
-    for index in range(4855, len(all_stock)):
+    print('the number of all stock', len(all_stock))
+    for index in range(0, len(all_stock)):
         # code = 'SH600096'
         stock = all_stock[index]
         code = stock.get('stock_code')
         if index % 100 == 0:
             print(index)
-        print(stock)
+        # print(stock)
         info = each_api.get_stock_profile_info(code)
         # print("i÷nfo", info)
         if not info or not info['org_short_name_cn']:

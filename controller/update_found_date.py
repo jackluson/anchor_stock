@@ -8,13 +8,14 @@ import os
 sys.path.append(os.getcwd() + '/')
 from sql_model.query import StockQuery
 from sql_model.update import UpdateSql
-from stock_info.xue_api import ApiXueqiu
+from api.xue_api import ApiXueqiu
 
 
 def update_found_date():
     each_query = StockQuery()
     each_update = UpdateSql()
     etf_funds = each_query.query_etf()
+    print("the count of all etf:", len(etf_funds))
     api_xue_qiu = ApiXueqiu()
     for etf_item in etf_funds:
         market = etf_item['market']
