@@ -31,12 +31,13 @@ class ApiCninfo(BaseApiConfig):
         entry_url = 'http://webapi.cninfo.com.cn/#/dataBrowse'
         self.mcode = get_request_header_key(
             entry_url, target_url, header_key)
+        print(self.mcode, 'mcode')
         return self.mcode
     
     def set_headers(self):
         self.headers = {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-            'Origin': 'http://webapi.cninfo.com.cn',
+            'Origin': 'https://webapi.cninfo.com.cn',
             'Referer': 'http://webapi.cninfo.com.cn/',
             'mcode': self.mcode
         }
@@ -54,6 +55,15 @@ class ApiCninfo(BaseApiConfig):
                 res_json = res.json()
                 if res_json.get('resultcode') == 401:
                     print('res_json', res_json) # 可能出现图片验证,这时候上网页上验证完即可
+                    if '请进行图片验证' in res_json.get('resultmsg'):
+                        val = input("请进行图片验证,验证完后再回来:\n \
+                              1.“继续”\n \
+                              2.“退出”\n \
+                              ")
+                        if val == '1':
+                            return self.get_stocks_by_industry(industry_code)
+                        else:
+                            quit()
                     for i in range(0, self.try_count):
                         self.set_mcode()
                         self.set_headers()
