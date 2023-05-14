@@ -28,6 +28,7 @@ class AssetCalculator:
         self.is_year = config.get('is_year')
         self.markdown = config.get('markdown')
         self.count = config.get('count') if config.get('count') else 5
+        self.is_all = config.get('is_all') if config.get('is_all') else False
         self.__type = config.get('type')
         self.__freq = 'D'
         self.__date = datetime.now().strftime("%Y-%m-%d")
@@ -54,8 +55,7 @@ class AssetCalculator:
         if before_day:
             ts = pd.Timestamp(date).timestamp()
             begin_date = datetime.fromtimestamp(
-                ts - (before_day + 30) * 24 * 3600).strftime("%Y-%m-%d")
-            end_date = date
+                ts - before_day * 24 * 3600).strftime("%Y-%m-%d")
             self.__before_day = before_day
         elif freq and not end_date:
             res = pd.Timestamp(date).to_period(freq=freq)
@@ -88,11 +88,37 @@ class AssetCalculator:
         elif begin_date != end_date:
             label = begin_date + '一' + end_date
         return label
+    
+    def calculate_v2(self):
+        kline_list_map = dict()
+        for index, etf_item in self.df_data.iterrows():
+            code = etf_item.get('code')
+            symbol = etf_item.get('market').upper() + code
+            name = etf_item.get('name')
+            kline = Kline(symbol, name)
+            params = self.params
+            kline.format_params(params)
+            kline.get_kline_data()
+            if len(kline.df_kline) == 0:
+                kline_list_map[code] = kline.df_kline
+                continue
+            kline.calculate_ma()
+            kline.calculate_mv()
+            kline.calculate_drawdown()
+            # kline.calculate_increase()
+            kline.df_kline['name'] = name
+            kline.df_kline['code'] = code
+            kline.df_kline['market'] = etf_item.get('market')
+            kline.df_kline['symbol'] = symbol
+            # kline.df_kline.to_csv("data/stock_kline.csv", header=True, index=True)
+            kline_list_map[code] = kline.df_kline
+        self.kline_list_map = kline_list_map
 
     def calculate(self):
         for index, etf_item in self.df_data.iterrows():
             symbol = etf_item.get('market').upper() + etf_item.get('code')
-            # print("symbol", symbol)
+            # if '159747' not in symbol:
+            #     continue
             name = etf_item.get('name')
             kline_res = self.calculate_kline(
                 symbol, name, None, False, False)
@@ -176,8 +202,9 @@ class AssetCalculator:
                     'begin_date': begin_date,
                     'end_date': end_date,
                 }
-                df.at[index, 'year_percent'] = self.calculate_kline(
+                year_percent = self.calculate_kline(
                     symbol, name, year_params, True, True)['percent']
+                df.at[index, 'year_percent'] = year_percent
         df['percent'] = df['percent'].astype(str) + '%'
         df.drop('market', axis=1, inplace=True)
         df.drop('cur_close', axis=1, inplace=True)
@@ -186,25 +213,29 @@ class AssetCalculator:
         return df
 
     def ouputRank(self):
-        count = self.count
-        top_df = self.df_data.head(count)
-        last_df = self.df_data.tail(count).iloc[::-1]
-        print('涨幅前{}名为:'.format(count))
-        df_top_full = self.append_before_data(top_df)
-        if self.markdown:
-            print(df_top_full.to_markdown())
-        else:
-            print(df_top_full)
         file_prefix = self.get_column_label(self.__date, self.__freq)
         path = './outcome/index/' + file_prefix + '_etf.xlsx'
-        update_xlsx_file(path, df_top_full, 'top')
-        print('跌幅前{}名为:'.format(count))
-        df_last_full = self.append_before_data(last_df)
-        if self.markdown:
-            print(df_last_full.to_markdown())
+        if self.is_all:
+            df_full = self.append_before_data()
+            update_xlsx_file(path, df_full, 'all', index=True)
         else:
-            print(df_last_full)
-        update_xlsx_file(path, df_last_full, 'tail')
+            count = self.count
+            top_df = self.df_data.head(count)
+            last_df = self.df_data.tail(count).iloc[::-1]
+            print('涨幅前{}名为:'.format(count))
+            df_top_full = self.append_before_data(top_df)
+            if self.markdown:
+                print(df_top_full.to_markdown())
+            else:
+                print(df_top_full)
+            update_xlsx_file(path, df_top_full, 'top', index=True)
+            print('跌幅前{}名为:'.format(count))
+            df_last_full = self.append_before_data(last_df)
+            if self.markdown:
+                print(df_last_full.to_markdown())
+            else:
+                print(df_last_full)
+            update_xlsx_file(path, df_last_full, 'tail', index=True)
 
     def output(self):
         if self.__type == 'etf':

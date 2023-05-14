@@ -212,6 +212,11 @@ class AssetCalculatorSt:
         update_xlsx_file(path, df_last_full, '跌幅前20名', index=False)
 
 
+    def output_all(self):
+        file_prefix = self.get_column_label(self.__date, self.__freq)
+        path = './outcome/st/' + file_prefix + '_st_all.xlsx'
+        df_full = self.append_before_data()
+        update_xlsx_file(path, df_full, 'all', index=True)
 if __name__ == '__main__':
     # asset_calculator()
     etf_gain = AssetCalculatorSt({

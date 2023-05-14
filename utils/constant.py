@@ -23,7 +23,7 @@ class Const(object):
         self.__dict__[name] = value
 
 const = Const()
-const.before_list = [7, 20, 30, 60]
+const.before_list = [7, 10, 20, 30, 60]
 const.index_stock_list = [
     {
         'name': '沪深300',
@@ -64,5 +64,10 @@ const.index_stock_list = [
         'name': '科创50',
         'market': 'SH',
         'code': '000688'
+    },
+    {
+        'name': '北证50',
+        'market': 'BJ',
+        'code': '899050'
     }
 ]

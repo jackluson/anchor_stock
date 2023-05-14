@@ -2,9 +2,10 @@ import pandas as pd
 from api.xue_api import ApiXueqiu
 import logging
 from  .__init__ import *
+from datetime import datetime
 
-save_begin_date = '2011-12-30'
-save_end_date = '2022-04-01'
+save_begin_date = '2017-06-29'
+save_end_date = '2023-04-28'
 
 xueqiu_api = ApiXueqiu()
 class Kline:
@@ -41,7 +42,7 @@ class Kline:
             return self
         return params
 
-    def get_kline_data(self):
+    def get_kline_data(self, *, is_slice = False):
         begin_date = self.params.get('begin_date')
         end_date = self.params.get('end_date')
         type = self.params.get('type')
@@ -49,22 +50,57 @@ class Kline:
         period = self.params.get('period')
         is_in_date = False
         payload = dict()
+        in_date_file = "./archive_data/csv/" + self.symbol + '_'  + save_begin_date + '_' + save_end_date + '_' + period + '.csv'
         if end_date:
             filename = "./archive_data/csv/" + self.symbol + '_'  + begin_date + '_' + end_date + '_' + period + '.csv'
-            is_in_date = pd.Timestamp(end_date).timestamp() <= pd.Timestamp(end_date).timestamp() and pd.Timestamp(begin_date).timestamp() >= pd.Timestamp(begin_date).timestamp()
+            is_in_date = pd.Timestamp(end_date).timestamp() <= pd.Timestamp(save_end_date).timestamp() and pd.Timestamp(begin_date).timestamp() >= pd.Timestamp(save_begin_date).timestamp()
             payload['end'] = end_date
         elif type and count:
             filename = "./archive_data/csv/" + self.symbol + '_'  + begin_date + '_' + type + '_' + str(count) + '_' + period + '.csv'
             payload['count'] = count
-        if os.path.exists(filename):
-            df_stock_kline_info = pd.read_csv(filename, index_col=['date'], parse_dates=['date'])
+        is_exist_file = os.path.exists(filename)
+        if is_exist_file or (is_in_date and os.path.exists(in_date_file)):
+            cur_file_name =  filename if is_exist_file else in_date_file
+            df_stock_kline_info = pd.read_csv(cur_file_name, index_col=['date'], parse_dates=['date'])
             # print("df_stock_kline_info", df_stock_kline_info)
             try:
                 if end_date:
-                    final_timestamp = df_stock_kline_info.index[-1]
-                    end_timestamp = pd.Timestamp(end_date)
-                    if final_timestamp >= end_timestamp:
-                        self.df_kline = df_stock_kline_info.loc[begin_date:end_date]
+                    pd_start_timestamp = df_stock_kline_info.index[0]
+                    pd_begin_timestamp = pd.Timestamp(begin_date)
+                    pd_save_begin_timestamp = pd.Timestamp(save_begin_date)
+                    pd_final_timestamp = df_stock_kline_info.index[-1]
+                    pd_end_timestamp = pd.Timestamp(end_date)
+                    td = (pd_final_timestamp - pd_end_timestamp).total_seconds()
+                    #已存在的数据的开始时间小于开始时间,特殊处理周末
+                    start_td = (pd_start_timestamp - pd_begin_timestamp).total_seconds()
+                    start_weekend = pd_begin_timestamp.weekday()
+                    max_td = 0
+                    is_begin_valid = False
+                    is_large_save_begin = pd_begin_timestamp  > pd_save_begin_timestamp
+                    # 周六
+                    if start_weekend == 5:
+                        max_td = 2 * 24 * 60 * 60
+                    # 周日
+                    elif start_weekend == 6:
+                        max_td = 1 * 24 * 60 * 60
+                    if max_td >= start_td:
+                        is_begin_valid = True
+                    weekend = pd_end_timestamp.weekday()
+                    max_td = 0
+                    # 周六
+                    if weekend == 5:
+                        max_td = -1 * 24 * 60 * 60
+                    # 周日
+                    elif weekend == 6:
+                        max_td = -2 * 24 * 60 * 60
+                    is_end_valid = td >= max_td
+                    if is_end_valid and ( is_begin_valid or is_large_save_begin):
+                        new_end_date_sec = pd_end_timestamp.timestamp() + max_td
+                        new_end_date  = datetime.fromtimestamp(new_end_date_sec).strftime("%Y-%m-%d")
+                        if is_slice :
+                            self.df_kline = df_stock_kline_info.loc[begin_date:new_end_date]
+                        else:
+                            self.df_kline = df_stock_kline_info # 为了获取过去均线,暂时不做截取
                     else:
                         self.df_kline = self.each_api.get_kline_info(self.symbol, begin_date, period, type = type, rest = payload)
 
@@ -73,6 +109,7 @@ class Kline:
                 return
             except:
                 print('date', begin_date, end_date,'匹配不到数据')
+                payload['end'] = end_date
                 df_stock_kline_info = self.each_api.get_kline_info(
                 self.symbol, begin_date, period, type = type, rest = payload)
         else:
@@ -112,3 +149,60 @@ class Kline:
         if self.df_kline.empty:
             return None
         return self.df_kline[dimension].tail(before_days).mean().round(round_num)
+
+    def calculate_ma(self):
+        self.df_kline['ma5'] = self.df_kline['close'].rolling(
+            5).mean().round(2)
+        self.df_kline['ma10'] = self.df_kline['close'].rolling(
+            10).mean().round(2)
+        self.df_kline['ma20'] = self.df_kline['close'].rolling(
+            20).mean().round(2)
+        self.df_kline['ma30'] = self.df_kline['close'].rolling(
+            30).mean().round(2)
+        self.df_kline['ma60'] = self.df_kline['close'].rolling(
+            60).mean().round(2)
+        self.df_kline['ma120'] = self.df_kline['close'].rolling(
+            120).mean().round(2)
+
+    def calculate_mv(self):
+        self.df_kline['mv5'] = self.df_kline['volume'].rolling(
+            4).mean().round(2)
+        self.df_kline['mv10'] = self.df_kline['volume'].rolling(
+            8).mean().round(2)
+        self.df_kline['mv20'] = self.df_kline['volume'].rolling(
+            20).mean().round(2)
+        self.df_kline['mv30'] = self.df_kline['volume'].rolling(
+            30).mean().round(2)
+
+    def calculate_drawdown(self):
+        day_cnt = 100
+        max_close_key = 'max_close_'+str(day_cnt)
+        min_close_key = 'min_close_'+str(day_cnt)
+        dd_key = 'dd_'+str(day_cnt)
+        max_dd_key = 'max_dd_'+str(day_cnt)
+        # 计算每一天的最近最大回撤幅度
+        self.df_kline[max_close_key] = self.df_kline['close'].rolling(day_cnt, min_periods=day_cnt).max()
+        self.df_kline[min_close_key] = self.df_kline['close'].rolling(day_cnt, min_periods=day_cnt).min()
+        self.df_kline[dd_key] = ((self.df_kline[min_close_key] - self.df_kline[max_close_key]) / self.df_kline[max_close_key]).round(4)
+        self.df_kline[max_dd_key] = self.df_kline[dd_key].rolling(
+            len(self.df_kline), min_periods=1).min().round(4)
+        # self.df_kline['max_close'] = self.df_kline['close'].rolling(
+        #     len(self.df_kline), min_periods=1).max()
+        # self.df_kline['min_close'] = self.df_kline['close'].rolling(
+        #     len(self.df_kline), min_periods=1).min()
+        # self.df_kline['dd'] = ((
+        #     self.df_kline['close'] - self.df_kline['max_close']) / self.df_kline['max_close']).round(4)
+        # self.df_kline['max_dd'] = self.df_kline['dd'].rolling(
+        #     len(self.df_kline), min_periods=1).min().round(4)
+    def calculate_increase(self):
+        # 过去20天的最低价
+        self.df_kline['min_price_20'] = self.df_kline['close'].rolling(20, min_periods=1).min().round(4)
+
+        # 计算每一天的涨幅相对低点的涨幅
+        self.df_kline['increase_20'] = (
+            (self.df_kline['close'] - self.df_kline['min_price_20']) / self.df_kline['min_price_20']).round(4)
+        self.df_kline['min_price_10'] = self.df_kline['close'].rolling(10, min_periods=1).min().round(4)
+
+        # 计算每一天的涨幅相对低点的涨幅
+        self.df_kline['increase_10'] = (
+            (self.df_kline['close'] - self.df_kline['min_price_10']) / self.df_kline['min_price_10']).round(4)
