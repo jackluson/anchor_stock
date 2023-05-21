@@ -31,9 +31,6 @@ def get_logger(name, log_file, level=logging.INFO):
     return logger
 
 class MomentumStrategyPlus(BaseStrategy):
-    init_money = 50000  # 初始资金
-    hold_market_value = init_money  # 目前持有市值
-    current_flow_money = init_money  # 可用现金流
     holdlist = []
     sell_list = []  # 卖出列表
     max_hold_count = 4  # 最大可同时买入的ETF数量
@@ -42,31 +39,35 @@ class MomentumStrategyPlus(BaseStrategy):
     sell_loss_count = 0
     record_percents = []
     daily_percent = 0
-    # -----cost------
-    min_commission_cost = 5  # 每次买入的费用
-    stamp_rate = 0.1 / 100  # 印花税, 卖出才收
-    transfer_rate = 0.002 / 100  # 过户费率
-    commission_rate = 0.03 / 100  # 佣金
-    sell_cost = 10  # 每次卖出的费用
     begin_date = None
     end_date = None
     is_predict = False
     similarity_threshold = 0.8
     open_drawdown_filter = True
-
-    def __init__(self):
+    follow_trend = False
+    drawdown_percent = -0.2
+    drawdown_size = 240
+    rise_percent = 0.2
+    open_filter_similarity = True
+    min_avg_volume = 1.0e7  # 最小交易量10000000
+    type = 'etf'
+    def __init__(self, *, rise_percent=0.2, open_filter_similarity=True, open_drawdown_filter=True, follow_trend=False, drawdown_percent=-0.2, drawdown_size=240, min_avg_volume = 1.0e7, lock=None, type="etf"):
         # self.lock = lock
         # --------params--------
-        self.rise_percent = 2  # 突破涨幅, 单位%
+        self.rise_percent = rise_percent  # 突破涨幅, 单位%
+        self.open_filter_similarity = open_filter_similarity
         self.min_drawdown = -0.05  # 回撤涨幅
-
+        self.type = type
         # self.ma_day = 4  # 低于x天均线
         # self.sell_second_ma_day = 9  # 低于多少日均线卖出
         self.threshold_day = 10 # 亏损可卖出天数门槛值
 
         self.before_found_day = 180  # 至少成立多少天etf
-        self.min_avg_volume = 1.0e7  # 最小交易量1000000
-        
+        self.min_avg_volume = min_avg_volume  # 最小交易量10000000
+        self.open_drawdown_filter = open_drawdown_filter
+        self.follow_trend = follow_trend
+        self.drawdown_size = drawdown_size
+        self.drawdown_percent = drawdown_percent
     def back_test(self, *, begin_date, end_date):
         log_file_name = 'log/' + begin_date + '至' + end_date + '_momentum_plus.log'
         # super().__init__(is_save_log, log_file_name)
@@ -119,13 +120,13 @@ class MomentumStrategyPlus(BaseStrategy):
         filter_found_date = datetime.fromtimestamp(
             ts - self.before_found_day * 24 * 3600).strftime("%Y-%m-%d")
         asset_calculator = AssetCalculator({
-            'type': 'etf',  # index or etf
+            'type': self.type,  # index or etf, bond
             # 'filter_found_date': filter_found_date,
             # 'mean_day': self.ma_day,
             # 'second_mean_day': self.sell_second_ma_day,
         })
         asset_calculator.set_date(date_params)
-        asset_calculator.calculate_v2()
+        asset_calculator.calculate_v2(drawdown_size=self.drawdown_size)
         self.asset_calculator = asset_calculator
     def traverse(self):
         dates = self.benchmark.df_kline.index
@@ -164,42 +165,46 @@ class MomentumStrategyPlus(BaseStrategy):
             ready_df.set_index('code', inplace=True)
         self.ready_prev_df = ready_prev_df
         self.ready_df = ready_df
-    def filter(self, *, filter_similarity = True):
-        
+    def filter(self):
         all_candidate = self.ready_df if self.is_predict else self.ready_prev_df
         candidate = all_candidate.loc[all_candidate['percent'] > self.rise_percent]
         candidate = candidate.loc[candidate['volume'] > self.min_avg_volume]
-        candidate = candidate.loc[candidate['volume'] > candidate['mv5']] #还是加上这个胜率高,收益也好
-        candidate = candidate.loc[candidate['mv5'] > candidate['mv10']] #这个也要加上,这个胜率高,收益也好
+        candidate = candidate.loc[candidate['volume'] > candidate['mv4']] #还是加上这个胜率高,收益也好
+        candidate = candidate.loc[candidate['mv4'] > candidate['mv8']] #这个也要加上,这个胜率高,收益也好
         candidate = candidate.loc[candidate['close'] > candidate['ma5']] # 这个影响因素不大
-        candidate = candidate.loc[candidate['close'] > candidate['ma10']]
+        candidate = candidate.loc[candidate['close'] > candidate['ma10']] # 这个影响很大,如果改成ma5> ma10
         # candidate = candidate.loc[candidate['ma5'] > candidate['ma10']]
-        candidate = candidate.loc[candidate['close'] > candidate['open']] # 筛选这个好一些
+        # candidate = candidate.loc[candidate['close'] > candidate['open']] # 筛选这个好一些
         # candidate = candidate.loc[candidate['ma10'] > candidate['ma20']] # 波动有大一些,但最终收益率差不多
         if self.open_drawdown_filter:
             #右侧交易
-            day_cnt = 100
-            max_dd_key = 'max_dd_'+str(day_cnt)
-            dd_key = 'dd_'+str(day_cnt)
-            candidate = candidate.loc[candidate[max_dd_key] < -0.2] # 过去x天回撤大于20%, 加了这个指标之后,类似右侧交易,抄底, 涨幅和胜率有显著提高, 改了-0.3之后,收益率提高一些,但胜率下降一些,可见-0.3和-0.2差别不大了,
-            candidate = candidate.loc[candidate[dd_key] < 0] # 这个值为-0.1效果也不好, 作用不大
+            drawdown_size = self.drawdown_size
+            max_dd_key = 'max_dd_'+str(drawdown_size)
+            dd_key = 'dd_'+str(drawdown_size)
+            candidate = candidate.loc[candidate[max_dd_key] < self.drawdown_percent] # 过去x天回撤大于20%, 加了这个指标之后,类似右侧交易,抄底, 涨幅和胜率有显著提高, 改了-0.3之后,收益率提高一些,但胜率下降一些,可见-0.3和-0.2差别不大了,
+            if self.follow_trend == False:
+                candidate = candidate.loc[candidate[dd_key] < 0] # 这个值为-0.1效果也不好, 作用不大
         candidate = candidate.sort_values(by="amount", ascending=False, ignore_index=True)
         # candidate = candidate.loc[candidate['increase_20'] < 0.2] # 加了这个没有明显影响
         # candidate = candidate.loc[candidate['increase_10'] < 0.1] # 加了这个之后策略涨幅出现明显下降
         # def due_filter(row):
-        #     volume_percent = (row.volume - row.mv5) / row.mv5
+        #     volume_percent = (row.volume - row.mv4) / row.mv4
         #     return volume_percent > 0.2
         # candidate = candidate[candidate.apply(due_filter, axis=1)]
+        # candidate.to_csv("data/stock_kline.csv", header=True, index=True)
         if self.is_predict == True:
-            print(candidate)
-        if len(candidate) > 0 and filter_similarity:
             print('=====================', self.cur_date, '=====================')
+            print(candidate)
+            print('=====================', self.cur_date, '=====================')
+        if len(candidate) > 0 and self.open_filter_similarity:
             prev_len = len(candidate)
             # print(candidate['name'])
             correlator = Correlator(self.cur_date if self.is_predict else self.prev_date.strftime("%Y-%m-%d"))
             compares = candidate
             holdlist = self.holdlist
             correlator.prepare_compare(compares, holdlist).correlate()
+            if self.is_predict:
+                print(correlator.res_compare)
             threshold = self.similarity_threshold # 相似度大于0.8过滤
             df_similarity = correlator.filter_near_similarity(threshold)
             new_candidate = []
@@ -221,8 +226,8 @@ class MomentumStrategyPlus(BaseStrategy):
                 # print(candidate['name'])
                 candidate.set_index('code', inplace=True)
             new_len = len(candidate)
-            print('过滤前数量:', prev_len, '过滤后数量:', new_len, "持仓数量:", len(self.holdlist))
-        if self.is_predict == True:
+            print(f'=====================过滤前数量:{ prev_len }, 过滤后数量:{new_len}, 持仓数量: {len(self.holdlist)}')
+        if self.is_predict == True and self.open_filter_similarity == True:
             print(candidate)
         self.candidate = candidate
     def trade(self):
@@ -271,7 +276,7 @@ class MomentumStrategyPlus(BaseStrategy):
         lastest_buy_item = self.ready_df.loc[code]
         pre_buy_item = self.ready_prev_df.loc[code]
         #右侧交易
-        day_cnt = 100
+        day_cnt = self.drawdown_size
         max_dd_key = 'max_dd_'+str(day_cnt)
         dd_key = 'dd_'+str(day_cnt)
         buy_price = round(lastest_buy_item['open'], 3) # 开盘价买入
@@ -287,21 +292,27 @@ class MomentumStrategyPlus(BaseStrategy):
             max_dd_key: pre_buy_item[max_dd_key],
         }
         self.holdlist.append(hold_item)
-        raise_volume_percent = round((pre_buy_item['volume'] - pre_buy_item['mv5']) / pre_buy_item['mv5'] * 100, 2)
+        raise_volume_percent = round((pre_buy_item['volume'] - pre_buy_item['mv4']) / pre_buy_item['mv4'] * 100, 2)
         self.logger.info(f"[buy] -- 买入时间:{hold_item['buy_date']}, name:{hold_item['name']}, code:{hold_item['code']}, 买入价格:{hold_item['buy_price']},前天涨幅:{pre_buy_item['percent']}%, 前天交易量:{pre_buy_item['volume']},当天涨幅:{lastest_buy_item['percent']}%, 前天交易量:{lastest_buy_item['volume']}, 相对于五日平均交易量涨幅: {raise_volume_percent}%")
         self.logger.info(f"[buy] -- {max_dd_key}:{pre_buy_item[max_dd_key]}, {dd_key}:{pre_buy_item[dd_key]}")
     def check_should_sell(self, item):
         code = item.get('code')
-        if code not in self.ready_prev_df.index:
+        kline_data = self.ready_df if self.is_predict else self.ready_prev_df
+        if code not in kline_data.index:
             return False
-        target_data = self.ready_prev_df.loc[code]
-        should_sell_price = target_data['close'] < target_data['ma5'] and (self.candidate_count > 0 or target_data['ma5'] < target_data['ma10']) # 如果有候选股，放松卖出价格条件
-        
+        target_data = kline_data.loc[code]
+        should_sell_price = target_data['close'] < target_data['ma5'] and (self.candidate_count > 0 or target_data['ma5'] < target_data['ma10']) # 如果有候选股，放松卖出价格条件, 此外如果改成close < ma10,影响也很大
+        # if should_sell_price and self.candidate_count > 0:
+        #     return True
         cur_date = self.cur_date
         buy_date = item['buy_date']
+        if type(buy_date) == str:
+            buy_date = pd.Timestamp(buy_date)
+        if type(cur_date) == str:
+            cur_date = pd.Timestamp(cur_date)
         hold_days = (cur_date - buy_date).days
         drawdown = round((target_data['close'] - item['buy_price']) / item['buy_price'], 3)
-        volume_percent = (target_data['volume'] - target_data['mv5']) / target_data['mv5']
+        volume_percent = (target_data['volume'] - target_data['mv4']) / target_data['mv4']
         is_scale_volume = volume_percent > 0.5 and target_data['percent'] <= -2 # 是否放量大跌
         if is_scale_volume:
             self.logger.info(f"[放量大跌] {item['name']},{code}, {target_data['percent']}, {should_sell_price}")
@@ -310,7 +321,7 @@ class MomentumStrategyPlus(BaseStrategy):
         # should_sell_price_5 = target_data['close'] < target_data['ma5']
         # if should_sell_price_5 and is_scale_volume: #低于五日均线并且放量大跌
         #     return True
-        # should_sell_volume = target_data['volume'] < target_data['mv5'] and target_data['volume'] < target_data['mv10'] and target_data['mv5'] < target_data['mv10']
+        # should_sell_volume = target_data['volume'] < target_data['mv4'] and target_data['volume'] < target_data['mv10'] and target_data['mv4'] < target_data['mv10']
         return should_sell_price and (is_scale_volume or is_meet_hold_day or is_meet_drawdown)
     def sell_or_keep(self):
         sell_list = []
@@ -323,6 +334,14 @@ class MomentumStrategyPlus(BaseStrategy):
                 sell_list.append(hold_item)
             else:
                 keep_list.append(hold_item)
+        if self.is_predict:
+            if len(sell_list) > 0:
+                print(f"====================={self.cur_date}卖出列表:{len(sell_list)}=====================")
+                print(sell_list)
+            if len(keep_list) > 0:
+                print(f"====================={self.cur_date}保留列表:{len(keep_list)}=====================")
+                print(keep_list)
+            return
         self.sell_list = sell_list
         self.keep_list = keep_list
         for item in sell_list:
@@ -358,7 +377,7 @@ class MomentumStrategyPlus(BaseStrategy):
             cur_percent = round(
             (row['last_price'] - row['buy_price']) / row['buy_price'] * 100, 2)
             self.logger.info(f"[keep] name:{row['name']}, code:{row['code']}, buy_price:{row['buy_price']}, latest price:{row['last_price']}, percent:{cur_percent}, buy date:{row['buy_date']}")
- 
+
     def serialize(self):
         self.logger.info("=====================serialize=====================")
         self.plot()
@@ -390,9 +409,10 @@ class MomentumStrategyPlus(BaseStrategy):
     def summary(self):
         self.logger.info('策略回撤期间: %s - %s' % (self.begin_date, self.end_date))
         self.logger.info('策略参数:')
-        self.logger.info(f"突破涨幅:{self.rise_percent}%,是否开启右侧交易:{self.open_drawdown_filter}")
+        self.logger.info(f"突破涨幅:{self.rise_percent}%; 是否开启右侧交易:{self.open_drawdown_filter}")
+        self.logger.info(f"回撤窗口大小:{self.drawdown_size}; 回撤幅度:{self.drawdown_percent * 100}%; 新高追:{self.follow_trend}")
         self.logger.info(f"最小交易量(min_avg_volume):{self.min_avg_volume}; 相似度门槛值:{self.similarity_threshold}")
-        self.logger.info(f'亏损可卖出天数阙值(threshold_day):{self.threshold_day};最小回撤:{self.min_drawdown * 100}%')
+        self.logger.info(f'亏损可卖出天数阙值(threshold_day):{self.threshold_day}; 最小回撤:{self.min_drawdown * 100}%')
         # self.logger.info('第一天均线天数(ma_day): %d; 第二天均线天数(sell_second_ma_day): %d' % (
         #     self.ma_day, self.sell_second_ma_day))
         trade_count = self.sell_win_count + self.sell_loss_count
@@ -420,7 +440,6 @@ class MomentumStrategyPlus(BaseStrategy):
             len(df_cumprod), min_periods=1).max()
         df_cumprod['dd'] = ((df_cumprod['strategy_percent'] - df_cumprod['max_percent'])/df_cumprod['max_percent']).round(4)
         df_cumprod['max_dd'] = df_cumprod['dd'].rolling(len(df_cumprod), min_periods=1).min().round(4)
-        
         print(df_cumprod)
         max_percent = round((df_cumprod.iloc[-1]['max_percent'] - 1) * 100, 2)  # 最大盈亏比例
         max_dd = round(df_cumprod.iloc[-1]['max_dd'] * 100, 2)  # 最大回撤
@@ -447,11 +466,35 @@ class MomentumStrategyPlus(BaseStrategy):
         self.is_predict = True
         # self.cur_date = self.dates[index]
         cur_date = datetime.now().strftime("%Y-%m-%d")
-        self.cur_date = target_date if target_date else "2023-04-28"
+        self.cur_date = target_date if target_date else "2023-05-19"
+        self.holdlist = [
+            # {
+            #     'name': "芯片ETF",
+            #     'code': "159995",
+            #     'symbol': "SZ159995",
+            #     'buy_price': 1.1,
+            #     'buy_date': '2023-04-21',
+            # },
+            # {
+            #     'name': "新能源",
+            #     'code': "516160",
+            #     'symbol': "SH516160",
+            #     'buy_price': 0.914,
+            #     'buy_date': '2023-04-21',
+            # },
+            # {
+            #     'name': "医药50",
+            #     'code': "512120",
+            #     'symbol': "SH512120",
+            #     'buy_price': 0.505,
+            #     'buy_date': '2023-04-26',
+            # }
+        ]
         self.collect_data()
         # self.logger.info("\n=================traverse_date: %s=====================", self.cur_date)
         self.prepare()
         self.filter()
+        self.sell_or_keep()
 
 
 if __name__ == '__main__':

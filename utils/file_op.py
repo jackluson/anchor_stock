@@ -9,10 +9,10 @@ Copyright (c) 2021 Camel Lu
 '''
 
 import time
-import datetime
+from datetime import datetime
 import os
 
-
+import numpy as np
 import pandas as pd
 from openpyxl import load_workbook
 
@@ -51,3 +51,32 @@ def update_xlsx_file(path, df_data, sheet_name, *, index=False):
     else:
         df_data.to_excel(
             path, sheet_name=sheet_name, index=index)
+
+def read_bond_excel(*, source_date=datetime.now().strftime("%Y-%m-%d"), sheetname="多因子", is_bond=True):
+    path = '/Users/admin/personal/anchor_plan/convertible-bond-crawler/dynamic_out/' + \
+        source_date + '_cb_list.xlsx'
+    xls = pd.read_excel(path, dtype={
+            "可转债代码": np.str, 
+            "股票代码": np.str, 
+            }, engine='openpyxl', sheet_name=None)
+    df_multi_factors = xls[sheetname]
+    columns={
+        '可转债代码': 'code',
+        '可转债名称': 'name',
+        '股票代码': 'stock_code',
+        '股票名称': 'stock_name',
+        '市场': 'market',
+    }
+    if not is_bond:
+        columns={
+            '可转债代码': 'bond_code',
+            '可转债名称': 'bond_name',
+            '股票代码': 'code',
+            '股票名称': 'name',
+            '市场': 'market',
+        }
+    df_multi_factors = df_multi_factors.rename(columns=columns).reset_index(drop=True)
+    df_multi_factors['code'] = df_multi_factors['code'].astype(str)
+    df_multi_factors['symbol'] = df_multi_factors['market'] + \
+        df_multi_factors['code']
+    return df_multi_factors

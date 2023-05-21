@@ -23,7 +23,8 @@ def store_stock_industry():
     exist_all_stock = each_query.query_all_stock()
     cur_all_stock = []
     print('行业数量:', len(industry_data))
-    for index in range(0, len(industry_data)):
+    start_index = 0
+    for index in range(start_index, len(industry_data)):
         item_industry = industry_data[index]
         stock_list = each_api.get_stocks_by_industry(item_industry[1])
         if index % 50 == 0:
@@ -50,11 +51,12 @@ def store_stock_industry():
                 each_insert.insert_stock_industry_data(stock_dict) #update or add new stock
     print('len', len(cur_all_stock))
     #退市股票信息更新 -- 如果在最新的列表数据中没有之前存的股票,说明该股退市,更新delist_status 字段
-    for item_stock in exist_all_stock:
-        stock_code = item_stock.get('stock_code')
-        if bool(re.search("^(6|9|0|2)\d{5}$", stock_code)) and stock_code not in cur_all_stock:
-            item_stock['delist_status'] = 1
-            print(item_stock)
-            each_insert.insert_stock_industry_data(item_stock)
+    if start_index == 0:
+        for item_stock in exist_all_stock:
+            stock_code = item_stock.get('stock_code')
+            if bool(re.search("^(6|9|0|2)\d{5}$", stock_code)) and stock_code not in cur_all_stock:
+                item_stock['delist_status'] = 1
+                print(item_stock)
+                each_insert.insert_stock_industry_data(item_stock)
 if __name__ == '__main__':
     store_stock_industry()

@@ -12,7 +12,8 @@ from datetime import datetime
 from sql_model.query import StockQuery
 from base.kline import Kline
 import pandas as pd
-from utils.file_op import update_xlsx_file
+from utils.file_op import update_xlsx_file, read_bond_excel
+from utils.index import get_symbol_by_code
 from utils.constant import const 
 import logging
 
@@ -36,15 +37,27 @@ class AssetCalculator:
         self.second_mean_day = config.get('second_mean_day')
         self.__before_day = None
         self.filter_found_date = config.get('filter_found_date')
-        self.__init_data()
+        self.set_source_data()
 
-    def __init_data(self):
+    def set_source_data(self):
         if self.__type == 'etf':
             each_query = StockQuery()
             etf_funds = each_query.query_etf(self.filter_found_date)
             self.df_data = pd.DataFrame(etf_funds)
         elif self.__type == 'index':
             self.df_data = pd.DataFrame(const.index_stock_list)
+        elif self.__type == 'cb' or self.__type == 'cb_stock':
+            self.df_data = read_bond_excel(source_date='2023-05-19', is_bond=self.__type == 'cb')
+        elif self.__type == 'st':
+            each_query = StockQuery()
+            st_stocks = each_query.query_stock_with_st()
+            df_data = pd.DataFrame(st_stocks)
+            df_data = df_data.rename(columns={
+                'stock_code': 'code',
+                'stock_name': 'name',
+                }).reset_index(drop=True)
+            df_data['market'] = df_data['code'].apply(lambda x: get_symbol_by_code(x)[0:2])
+            self.df_data = df_data
 
     def set_date(self, params):
         date = params.get('date') if params.get('date') else self.__date
@@ -89,7 +102,7 @@ class AssetCalculator:
             label = begin_date + '一' + end_date
         return label
     
-    def calculate_v2(self):
+    def calculate_v2(self, *, drawdown_size = 100):
         kline_list_map = dict()
         for index, etf_item in self.df_data.iterrows():
             code = etf_item.get('code')
@@ -104,7 +117,7 @@ class AssetCalculator:
                 continue
             kline.calculate_ma()
             kline.calculate_mv()
-            kline.calculate_drawdown()
+            kline.calculate_drawdown(drawdown_size)
             # kline.calculate_increase()
             kline.df_kline['name'] = name
             kline.df_kline['code'] = code

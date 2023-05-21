@@ -12,7 +12,7 @@ from datetime import datetime
 import logging
 
 from utils.index import bootstrap_thread
-from stock_info.xue_api import ApiXueqiu
+from api.xue_api import ApiXueqiu
 from sql_model.query import StockQuery
 from sql_model.insert import StockInsert
 
