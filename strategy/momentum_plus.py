@@ -43,19 +43,21 @@ class MomentumStrategyPlus(BaseStrategy):
     end_date = None
     is_predict = False
     similarity_threshold = 0.8
+    open_volume_filter = True
     open_drawdown_filter = True
     follow_trend = False
     drawdown_percent = -0.2
     drawdown_size = 240
-    rise_percent = 0.2
-    open_filter_similarity = True
+    rise_percent = 2
+    open_similarity_filter = True
     min_avg_volume = 1.0e7  # 最小交易量10000000
     type = 'etf'
-    def __init__(self, *, rise_percent=0.2, open_filter_similarity=True, open_drawdown_filter=True, follow_trend=False, drawdown_percent=-0.2, drawdown_size=240, min_avg_volume = 1.0e7, lock=None, type="etf"):
+    def __init__(self, *, rise_percent=2, open_volume_filter = True, open_similarity_filter=True, open_drawdown_filter=True, follow_trend=False, drawdown_percent=-0.2, drawdown_size=240, min_avg_volume = 1.0e7, lock=None, type="etf"):
         # self.lock = lock
         # --------params--------
         self.rise_percent = rise_percent  # 突破涨幅, 单位%
-        self.open_filter_similarity = open_filter_similarity
+        self.open_volume_filter = open_volume_filter
+        self.open_similarity_filter = open_similarity_filter
         self.min_drawdown = -0.05  # 回撤涨幅
         self.type = type
         # self.ma_day = 4  # 低于x天均线
@@ -154,10 +156,12 @@ class MomentumStrategyPlus(BaseStrategy):
             if self.is_predict == False and self.prev_date in df_kline.index:
                 cur_kline = df_kline.loc[self.prev_date] #前一天数据计算
                 ready_prev_df.append(cur_kline)
+            # 周末日期无效:TODO:待处理
             if self.cur_date in df_kline.index:
                 cur_kline = df_kline.loc[self.cur_date] #当天数据计算
                 ready_df.append(cur_kline)
         ready_prev_df = pd.DataFrame(ready_prev_df)
+
         if len(ready_prev_df) > 0:
             ready_prev_df.set_index('code', inplace=True)
         ready_df = pd.DataFrame(ready_df)
@@ -167,10 +171,14 @@ class MomentumStrategyPlus(BaseStrategy):
         self.ready_df = ready_df
     def filter(self):
         all_candidate = self.ready_df if self.is_predict else self.ready_prev_df
+        if len(all_candidate) == 0:
+            print('程序异常退出')
+            exit(1)
         candidate = all_candidate.loc[all_candidate['percent'] > self.rise_percent]
-        candidate = candidate.loc[candidate['volume'] > self.min_avg_volume]
-        candidate = candidate.loc[candidate['volume'] > candidate['mv4']] #还是加上这个胜率高,收益也好
-        candidate = candidate.loc[candidate['mv4'] > candidate['mv8']] #这个也要加上,这个胜率高,收益也好
+        if self.open_volume_filter: 
+            candidate = candidate.loc[candidate['volume'] > self.min_avg_volume]
+            candidate = candidate.loc[candidate['volume'] > candidate['mv4']] #还是加上这个胜率高,收益也好
+            candidate = candidate.loc[candidate['mv4'] > candidate['mv8']] #这个也要加上,这个胜率高,收益也好
         candidate = candidate.loc[candidate['close'] > candidate['ma5']] # 这个影响因素不大
         candidate = candidate.loc[candidate['close'] > candidate['ma10']] # 这个影响很大,如果改成ma5> ma10
         # candidate = candidate.loc[candidate['ma5'] > candidate['ma10']]
@@ -193,10 +201,10 @@ class MomentumStrategyPlus(BaseStrategy):
         # candidate = candidate[candidate.apply(due_filter, axis=1)]
         # candidate.to_csv("data/stock_kline.csv", header=True, index=True)
         if self.is_predict == True:
-            print('=====================', self.cur_date, '=====================')
+            print('===================== 过滤前',self.cur_date,'=====================')
             print(candidate)
-            print('=====================', self.cur_date, '=====================')
-        if len(candidate) > 0 and self.open_filter_similarity:
+            print('===================== ',self.cur_date,'=====================')
+        if len(candidate) > 0 and self.open_similarity_filter:
             prev_len = len(candidate)
             # print(candidate['name'])
             correlator = Correlator(self.cur_date if self.is_predict else self.prev_date.strftime("%Y-%m-%d"))
@@ -226,9 +234,10 @@ class MomentumStrategyPlus(BaseStrategy):
                 # print(candidate['name'])
                 candidate.set_index('code', inplace=True)
             new_len = len(candidate)
-            print(f'=====================过滤前数量:{ prev_len }, 过滤后数量:{new_len}, 持仓数量: {len(self.holdlist)}')
-        if self.is_predict == True and self.open_filter_similarity == True:
+            print(f'===================== 相似度过滤前数量:{ prev_len }, 过滤后数量:{new_len}, 持仓数量: {len(self.holdlist)} =====================')
+        if len(candidate) > 0 and self.is_predict == True and self.open_similarity_filter == True:
             print(candidate)
+        print(f'===================== 合格数据过滤前数量:{ len(all_candidate) }, 过滤后数量:{len(candidate)}, 原数据数量:{len(self.asset_calculator.df_data)}, 持仓数量: {len(self.holdlist)} =====================')
         self.candidate = candidate
     def trade(self):
         self.sell_or_keep()
@@ -466,30 +475,32 @@ class MomentumStrategyPlus(BaseStrategy):
         self.is_predict = True
         # self.cur_date = self.dates[index]
         cur_date = datetime.now().strftime("%Y-%m-%d")
-        self.cur_date = target_date if target_date else "2023-05-19"
-        self.holdlist = [
-            # {
-            #     'name': "芯片ETF",
-            #     'code': "159995",
-            #     'symbol': "SZ159995",
-            #     'buy_price': 1.1,
-            #     'buy_date': '2023-04-21',
-            # },
-            # {
-            #     'name': "新能源",
-            #     'code': "516160",
-            #     'symbol': "SH516160",
-            #     'buy_price': 0.914,
-            #     'buy_date': '2023-04-21',
-            # },
-            # {
-            #     'name': "医药50",
-            #     'code': "512120",
-            #     'symbol': "SH512120",
-            #     'buy_price': 0.505,
-            #     'buy_date': '2023-04-26',
-            # }
-        ]
+        self.cur_date = target_date if target_date else cur_date
+        print(f"===================== 预测日期:{self.cur_date} =====================")
+        if self.type == 'etf':
+            self.holdlist = [
+                {
+                    'name': "芯片ETF",
+                    'code': "159995",
+                    'symbol': "SZ159995",
+                    'buy_price': 1.1,
+                    'buy_date': '2023-04-21',
+                },
+                {
+                    'name': "新能源",
+                    'code': "516160",
+                    'symbol': "SH516160",
+                    'buy_price': 0.914,
+                    'buy_date': '2023-04-21',
+                },
+                {
+                    'name': "医药50",
+                    'code': "512120",
+                    'symbol': "SH512120",
+                    'buy_price': 0.505,
+                    'buy_date': '2023-04-26',
+                }
+            ]
         self.collect_data()
         # self.logger.info("\n=================traverse_date: %s=====================", self.cur_date)
         self.prepare()

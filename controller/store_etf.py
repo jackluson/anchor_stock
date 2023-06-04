@@ -7,6 +7,9 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2021 Camel Lu
 '''
+import os
+import sys
+sys.path.append(os.getcwd() + '/')
 from random import random
 from time import time
 import numpy as np
@@ -15,13 +18,16 @@ from sql_model.insert import StockInsert
 from api.sse_api import ApiSSE
 from api.szse_api import ApiSZSE
 from api.xue_api import ApiXueqiu
+from models.etf_indicator import EtfFund, EtfIndicator
+from utils.index import timeit
+from db.engine import get_session
 
 def batch_insert_etf(df):
     f_fund_list = df.replace({'': None})
     each_insert = StockInsert()
     each_insert.batch_insert_etf_fund(f_fund_list.values.tolist())
 
-def store_sse_etf(api_xue_qiu:ApiXueqiu):
+def store_sse_etf():
     each_api = ApiSSE()
     subClass_list = [
         {
@@ -79,11 +85,12 @@ def store_sse_etf(api_xue_qiu:ApiXueqiu):
             id = int(time() * int((index + random()) * 10000)) + \
                 int(random() * 10000) + index
             code = df_fund_list.iloc[index]['fundCode']
-            etf_base_info = api_xue_qiu.get_stock_page_info('sh' + code)
+            name = df_fund_list.iloc[index]['fundAbbr']
+            # etf_base_info = api_xue_qiu.get_stock_page_info('sh' + code)
             df_fund_list.at[index, 'id'] = id
-            df_fund_list.at[index, 'found_date'] = etf_base_info.get('found_date')
-            delist_date = etf_base_info.get('delist_date')
-            df_fund_list.at[index, 'delist_date'] = delist_date if delist_date else ''
+            # df_fund_list.at[index, 'found_date'] = etf_base_info.get('found_date')
+            # delist_date = etf_base_info.get('delist_date')
+            # df_fund_list.at[index, 'delist_date'] = delist_date if delist_date else ''
         df_fund_list['market'] = 'sh' # 保持与sq表l设计顺序一致
 
         batch_insert_etf(df_fund_list)
@@ -93,7 +100,7 @@ def store_sse_etf(api_xue_qiu:ApiXueqiu):
         #     json.dump(fund_list.get('result'), f, ensure_ascii=False, indent=2)
 
 
-def store_szse_etf(api_xue_qiu: ApiXueqiu):
+def store_szse_etf():
     each_api = ApiSZSE()
     cur_page = 1
     fund_list = each_api.get_etf_fund_list(cur_page, cur_page)
@@ -145,10 +152,10 @@ def store_szse_etf(api_xue_qiu: ApiXueqiu):
         df_etf.at[index, 'nhzs'] = index_name
         df_etf.at[index, 'INDEX_CODE'] = index_code
         symbol = 'sz' + code
-        etf_base_info = api_xue_qiu.get_stock_page_info(symbol)
-        df_etf.at[index, 'found_date'] = etf_base_info.get('found_date')
-        delist_date = etf_base_info.get('delist_date')
-        df_etf.at[index, 'delist_date'] = delist_date if delist_date else ''
+        # etf_base_info = api_xue_qiu.get_stock_page_info(symbol)
+        # df_etf.at[index, 'found_date'] = etf_base_info.get('found_date')
+        # delist_date = etf_base_info.get('delist_date')
+        # df_etf.at[index, 'delist_date'] = delist_date if delist_date else ''
     rename_map = {
         'sys_key': 'fundCode',
         'glrmc': 'companyName',
@@ -158,12 +165,42 @@ def store_szse_etf(api_xue_qiu: ApiXueqiu):
     df_etf['market'] = 'sz' 
     batch_insert_etf(df_etf)
 
-
-def store_etf():
+@timeit
+def update_etf_indictor():
     api_xue_qiu = ApiXueqiu()
-    store_sse_etf(api_xue_qiu) # 上交所
-    store_szse_etf(api_xue_qiu) # 深交所
+    session = get_session()
+    all_etf_funds = session.query(EtfFund).where(EtfFund.delist_date == None).offset(0).limit(1000).all()
+    print(f"=================ETF数量:{len(all_etf_funds)}=================")
+    indictor_list = []
+    for index in range(0, len(all_etf_funds)):
+        fund = all_etf_funds[index]
+        symbol = fund.market + fund.code
+        if index % 100 == 0:
+            print(index)
+        etf_base_info = api_xue_qiu.get_stock_page_info(symbol)
+        indictor_list.append({
+                **etf_base_info.get('indictor'),
+                'code': fund.code,
+                'name': fund.name
+            })
+        delist_date = etf_base_info.get('delist_date')
+        found_date = etf_base_info.get('found_date')
+        if delist_date:
+            EtfFund(**{
+                'code': fund.code,
+                'name': fund.name, # 非空字段
+                'company': fund.company, # 非空字段
+                'delist_date': delist_date,
+                'found_date': found_date
+            }).upsert(ingore_keys=['code'])
+    EtfIndicator.bulk_save(indictor_list)
+
+@timeit
+def store_etf():
+    store_sse_etf() # 上交所
+    store_szse_etf() # 深交所
 
 
 if __name__ == '__main__':
-    store_etf()
+    # store_etf()
+    update_etf_indictor()
