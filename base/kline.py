@@ -1,17 +1,23 @@
 import pandas as pd
 from api.xue_api import ApiXueqiu
 import logging
+from utils.index import timeit
 from  .__init__ import *
 from datetime import datetime
 
 save_begin_date = '2017-06-29'
 save_end_date = '2023-04-28'
+xueqiu_api = None
 
-xueqiu_api = ApiXueqiu()
+archive_dir = "./archive_data/csv/"
+
 class Kline:
     def __init__(self, symbol, name):
         self.date = None
         self.freq = 'D'
+        global xueqiu_api
+        if xueqiu_api == None:
+            xueqiu_api = ApiXueqiu()
         self.each_api = xueqiu_api
         self.symbol = symbol
         self.name = name
@@ -50,13 +56,13 @@ class Kline:
         period = self.params.get('period')
         is_in_date = False
         payload = dict()
-        in_date_file = "./archive_data/csv/" + self.symbol + '_'  + save_begin_date + '_' + save_end_date + '_' + period + '.csv'
+        in_date_file = archive_dir + self.symbol + '_'  + save_begin_date + '_' + save_end_date + '_' + period + '.csv'
         if end_date:
-            filename = "./archive_data/csv/" + self.symbol + '_'  + begin_date + '_' + end_date + '_' + period + '.csv'
+            filename = archive_dir + self.symbol + '_'  + begin_date + '_' + end_date + '_' + period + '.csv'
             is_in_date = pd.Timestamp(end_date).timestamp() <= pd.Timestamp(save_end_date).timestamp() and pd.Timestamp(begin_date).timestamp() >= pd.Timestamp(save_begin_date).timestamp()
             payload['end'] = end_date
         elif type and count:
-            filename = "./archive_data/csv/" + self.symbol + '_'  + begin_date + '_' + type + '_' + str(count) + '_' + period + '.csv'
+            filename = archive_dir + self.symbol + '_'  + begin_date + '_' + type + '_' + str(count) + '_' + period + '.csv'
             payload['count'] = count
         is_exist_file = os.path.exists(filename)
         if is_exist_file or (is_in_date and os.path.exists(in_date_file)):
@@ -94,7 +100,7 @@ class Kline:
                     elif weekend == 6:
                         max_td = -2 * 24 * 60 * 60
                     is_end_valid = td >= max_td
-                    if is_end_valid and ( is_begin_valid or is_large_save_begin):
+                    if is_end_valid and (is_begin_valid or is_large_save_begin):
                         new_end_date_sec = pd_end_timestamp.timestamp() + max_td
                         new_end_date  = datetime.fromtimestamp(new_end_date_sec).strftime("%Y-%m-%d")
                         if is_slice :
@@ -122,11 +128,12 @@ class Kline:
             logging.info(line)
             self.df_kline = df_stock_kline_info
             return
+        init_data = df_stock_kline_info
         df_stock_kline_info['date'] = df_stock_kline_info.index.date
         df_stock_kline_info = df_stock_kline_info.set_index('date')
         df_stock_kline_info.to_csv(filename)
-        self.df_kline = df_stock_kline_info
-
+        self.df_kline = init_data
+    
     def calculate_period_percent(self, before_day_count=None, is_format_str=False):
         if(self.df_kline.empty):
             print(self.symbol, 'K线数据为空:', self.df_kline)
@@ -165,27 +172,37 @@ class Kline:
             120).mean().round(2)
 
     def calculate_mv(self):
-        self.df_kline['mv5'] = self.df_kline['volume'].rolling(
+        self.df_kline['mv4'] = self.df_kline['volume'].rolling(
             4).mean().round(2)
-        self.df_kline['mv10'] = self.df_kline['volume'].rolling(
+        self.df_kline['mv8'] = self.df_kline['volume'].rolling(
             8).mean().round(2)
         self.df_kline['mv20'] = self.df_kline['volume'].rolling(
             20).mean().round(2)
         self.df_kline['mv30'] = self.df_kline['volume'].rolling(
             30).mean().round(2)
+        
+        self.df_kline['max_mv4'] = self.df_kline['volume'].rolling(4, min_periods=1).max()
+        self.df_kline['max_percent4'] = self.df_kline['percent'].rolling(4, min_periods=1).max()
+        
 
-    def calculate_drawdown(self):
-        day_cnt = 100
+    def calculate_drawdown(self, size = 100):
+        day_cnt = size
         max_close_key = 'max_close_'+str(day_cnt)
         min_close_key = 'min_close_'+str(day_cnt)
         dd_key = 'dd_'+str(day_cnt)
         max_dd_key = 'max_dd_'+str(day_cnt)
-        # 计算每一天的最近最大回撤幅度
-        self.df_kline[max_close_key] = self.df_kline['close'].rolling(day_cnt, min_periods=day_cnt).max()
-        self.df_kline[min_close_key] = self.df_kline['close'].rolling(day_cnt, min_periods=day_cnt).min()
-        self.df_kline[dd_key] = ((self.df_kline[min_close_key] - self.df_kline[max_close_key]) / self.df_kline[max_close_key]).round(4)
+        # 计算每一天的最近最大回撤幅度, min_periods一定要设置为1, 否则会出现max_dd_key出现问题
+        self.df_kline[min_close_key] = self.df_kline['close'].rolling(day_cnt, min_periods=1).min()
+        # self.df_kline[max_close_key] = self.df_kline['close'].expanding(min_periods=day_cnt).max()
+        self.df_kline[max_close_key] = self.df_kline['close'].rolling(day_cnt, min_periods=1).max()
+        self.df_kline[dd_key] = ((self.df_kline['close'] - self.df_kline[max_close_key]) / self.df_kline[max_close_key]).round(4)
         self.df_kline[max_dd_key] = self.df_kline[dd_key].rolling(
-            len(self.df_kline), min_periods=1).min().round(4)
+            day_cnt, min_periods=1).min().round(4)
+        # for debugger
+        # if self.symbol == 'SZ159855':
+        #     print(self.df_kline[[max_close_key, min_close_key, dd_key, max_dd_key, 'diff']])
+        #     self.df_kline.to_csv("data/stock_kline-SZ159855.csv", header=True, index=True)
+
         # self.df_kline['max_close'] = self.df_kline['close'].rolling(
         #     len(self.df_kline), min_periods=1).max()
         # self.df_kline['min_close'] = self.df_kline['close'].rolling(

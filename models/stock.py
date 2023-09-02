@@ -6,6 +6,9 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2022 Camel Lu
 '''
+import sys
+sys.path.append('.')
+
 from sqlalchemy import Table
 from models.var import ORM_Base, engine, Model
 from lib.mysnowflake import IdWorker

@@ -14,7 +14,7 @@ import dateutil
 import requests
 from bs4 import BeautifulSoup
 
-from base.base_api_config import BaseApiConfig
+from base.base_api import BaseApi
 from utils.file_op import write_fund_json_data
 from utils.index import get_symbol_by_code, get_request_header_key
 
@@ -40,7 +40,7 @@ indictor_key_map = {
     # '成立日': 'found_date'
 }
 
-class ApiXueqiu(BaseApiConfig):
+class ApiXueqiu(BaseApi):
     def __init__(self):
         super().__init__()
         self.xue_qiu_cookie = os.getenv('xue_qiu_cookie')
@@ -294,6 +294,7 @@ class ApiXueqiu(BaseApiConfig):
                 df['timestamp'], unit='s', utc=True)
             # df['date'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M')
             df = df.set_index('timestamp').tz_convert('Asia/Shanghai')
+            # df = df.set_index('timestamp').tz_convert('Asia/Shanghai')
         except:
             print(res_json)
             print(symbol)

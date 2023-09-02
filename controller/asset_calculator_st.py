@@ -15,6 +15,8 @@ import pandas as pd
 from utils.file_op import update_xlsx_file
 from utils.index import get_symbol_by_code
 from utils.constant import const 
+import numpy as np
+
 import logging
 
 class AssetCalculatorSt:
@@ -92,15 +94,17 @@ class AssetCalculatorSt:
             name = stock_item.get('stock_name')
             kline_res = self.calculate_kline(
                 symbol, name, None, False, False)
+            # self.df_data.at[index, 'market_capital'] = str(round(kline_res['market_capital'] / 1e8, 2)) + '亿' if kline_res.get('market_capital') else None
+            self.df_data.at[index, 'market_capital'] = round(kline_res['market_capital'] / 1e8, 2) if kline_res.get('market_capital') else None
+            self.df_data.at[index, 'price'] = kline_res.get('price')
             self.df_data.at[index, 'percent'] = kline_res['percent']
-            self.df_data.at[index, 'cur_close'] = kline_res['cur_close']
             if self.mean_day:
                 self.df_data.at[index, 'avg_volume'] = kline_res['avg_volume']
                 self.df_data.at[index, 'avg_amount'] = kline_res['avg_amount']
                 self.df_data.at[index, 'avg_price'] = kline_res['avg_price']
             if self.second_mean_day:
                 self.df_data.at[index, 'avg_second_price'] = kline_res['avg_second_price']
-        self.df_data.dropna(subset=['percent'], inplace=True)
+        # self.df_data.dropna(subset=['percent'], inplace=True)
         self.df_data.sort_values(
             by='percent', inplace=True, ascending=False, ignore_index=True)
         return self
@@ -111,12 +115,11 @@ class AssetCalculatorSt:
         kline.format_params(params)
         kline.get_kline_data()
         percent = kline.calculate_period_percent(self.__before_day, is_format_str)
-        res = {}
+        res = dict()
         res['percent'] = percent
-        if kline.df_kline.empty:
-            res['cur_close'] = 0
-        else:
-            res['cur_close'] = kline.df_kline.iloc[-1]['close']
+        if not kline.df_kline.empty:
+            res['price'] = kline.df_kline.iloc[-1]['close']
+            res['market_capital'] = kline.df_kline.iloc[-1]['market_capital']
         mean_day = self.mean_day
         if mean_day:
             res['avg_volume'] = kline.get_past_mean('volume', mean_day)
@@ -141,7 +144,7 @@ class AssetCalculatorSt:
         }
         res = self.calculate_kline(
             symbol, name, ago_params, True, True)
-        return res['percent']
+        return res
 
     def append_before_data(self, init_df=None):
         df = self.df_data
@@ -149,6 +152,9 @@ class AssetCalculatorSt:
             df = init_df.copy()
         columns = {
             "stock_code": "证券代码",
+            "industry_name_third": "行业",
+            'market_capital': '最新市值',
+            'price': '最新价',
             "stock_name": "证券名称",
             "org_name": "公司名称",
             "actual_controller": "实际控制人",
@@ -162,8 +168,14 @@ class AssetCalculatorSt:
                 ago_key = 'day_' + str(ago) + '_before_percent'
                 columns[ago_key] = '近' + str(ago) + '天'
                 for index, stock_item in df.iterrows():
-                    df.at[index, ago_key] = self.affix_date_percent_date(
+                    kline_res = self.affix_date_percent_date(
                         ago, stock_item)
+                    df.at[index, ago_key] = kline_res.get('percent')
+                    if not df.at[index, 'market_capital']:
+                        # df.at[index, 'market_capital'] = str(round(kline_res['market_capital'] / 1e8, 2)) + '亿' if kline_res.get('market_capital') else None
+                        df.at[index, 'market_capital'] = round(kline_res['market_capital'] / 1e8, 2) if kline_res.get('market_capital') else None
+                    if np.isnan(df.at[index, 'price']):
+                        df.at[index, 'price'] = kline_res.get('price')
         if self.is_year:
             for index, stock_item in df.iterrows():
                 stock_code = stock_item.get('stock_code')
@@ -178,10 +190,16 @@ class AssetCalculatorSt:
                     'begin_date': begin_date,
                     'end_date': end_date,
                 }
-                df.at[index, 'year_percent'] = self.calculate_kline(
-                    symbol, name, year_params, True, True)['percent']
+                kline_res = self.calculate_kline(
+                    symbol, name, year_params, True, True)
+                df.at[index, 'year_percent'] = kline_res.get('percent')
+                if not df.at[index, 'market_capital']:
+                    df.at[index, 'market_capital'] = str(round(kline_res['market_capital'] / 1e8, 2)) + '亿' if kline_res.get('market_capital') else None
+                if np.isnan(df.at[index, 'price']):
+                    df.at[index, 'price'] = kline_res.get('price')
         df['percent'] = df['percent'].astype(str) + '%'
-        df.drop('cur_close', axis=1, inplace=True)
+        print(df)
+        # df.drop('price', axis=1, inplace=True)
         df.rename(columns=columns, inplace=True)
         # df.set_index("证券名称", inplace=True)
         # if self.markdown:

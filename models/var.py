@@ -11,15 +11,11 @@ import sys
 sys.path.append('./')
 from sqlalchemy import Column, text, DateTime, func
 from sqlalchemy.dialects.mysql import insert
-from db.engine import get_engine, get_orm_base
-
-from sqlalchemy.orm import Session
+from db.engine import get_engine, get_orm_base, get_session
 
 ORM_Base = get_orm_base()
 
-prefix = 'fund_morning_'
-
-engine = get_engine(echo=False)
+prefix = ''
 
 # class ORM_Base(Base):
 #     def __init__(self, **kwargs) -> None:
@@ -38,12 +34,12 @@ class Model():
 
     def __init__(self, **kwargs) -> None:
         self.__input_data__ = kwargs
-        self.session = Session(engine)
+        self.session = get_session()
 
     def save(self):
         self.session.add(self)
         self.session.commit()
-    
+
     def upsert(self, *, ingore_keys = []):
         column_keys = self.__table__.columns.keys()
 
@@ -75,5 +71,3 @@ class Model():
         # self.session.add(self)
         self.session.execute(on_duplicate_key_stmt)
         self.session.commit()
-
-

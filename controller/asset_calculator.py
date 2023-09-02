@@ -12,7 +12,6 @@ from datetime import datetime
 from sql_model.query import StockQuery
 from base.kline import Kline
 import pandas as pd
-from utils.file_op import update_xlsx_file, read_bond_excel
 from utils.index import get_symbol_by_code
 from utils.constant import const 
 import logging
@@ -28,7 +27,10 @@ class AssetCalculator:
             setattr(self, ago_key, config.get(ago_key))
         self.is_year = config.get('is_year')
         self.markdown = config.get('markdown')
-        self.count = config.get('count') if config.get('count') else 5
+        self.count = config.get# The `(` in the code is used to indicate the start of a function call.
+        # It is used to call the `AssetCalculator` constructor and pass in a
+        # dictionary as an argument.
+        ('count') if config.get('count') else 5
         self.is_all = config.get('is_all') if config.get('is_all') else False
         self.__type = config.get('type')
         self.__freq = 'D'
@@ -46,8 +48,6 @@ class AssetCalculator:
             self.df_data = pd.DataFrame(etf_funds)
         elif self.__type == 'index':
             self.df_data = pd.DataFrame(const.index_stock_list)
-        elif self.__type == 'cb' or self.__type == 'cb_stock':
-            self.df_data = read_bond_excel(source_date='2023-05-19', is_bond=self.__type == 'cb')
         elif self.__type == 'st':
             each_query = StockQuery()
             st_stocks = each_query.query_stock_with_st()
@@ -59,7 +59,7 @@ class AssetCalculator:
             df_data['market'] = df_data['code'].apply(lambda x: get_symbol_by_code(x)[0:2])
             self.df_data = df_data
 
-    def set_date(self, params):
+    def set_date(self, params):   
         date = params.get('date') if params.get('date') else self.__date
         freq = params.get('freq') if params.get('freq') else self.__freq
         before_day = params.get('before_day')
@@ -104,6 +104,7 @@ class AssetCalculator:
     
     def calculate_v2(self, *, drawdown_size = 100):
         kline_list_map = dict()
+        
         for index, etf_item in self.df_data.iterrows():
             code = etf_item.get('code')
             symbol = etf_item.get('market').upper() + code
@@ -113,6 +114,7 @@ class AssetCalculator:
             kline.format_params(params)
             kline.get_kline_data()
             if len(kline.df_kline) == 0:
+                print(f'code:{code}, 没有kline数据')
                 kline_list_map[code] = kline.df_kline
                 continue
             kline.calculate_ma()

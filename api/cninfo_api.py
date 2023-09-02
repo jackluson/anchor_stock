@@ -10,36 +10,36 @@ import os
 import requests
 
 from utils.index import get_request_header_key
-from base.base_api_config import BaseApiConfig
+from base.base_api import BaseApi
 
 default_try_count = 3
-class ApiCninfo(BaseApiConfig):
-    mcode = None  # 巨潮资讯接口mcode
+class ApiCninfo(BaseApi):
+    encKey = None  # 巨潮资讯接口encKey
     try_count = default_try_count # try count when happen error
     request_count = 0 # 记录请求记录
     headers = dict() # 请求头
     def __init__(self):
         super().__init__()
-        self.mcode = os.getenv('mcode')
-        if not self.mcode:
-            self.set_mcode()
+        self.encKey = os.getenv('encKey')
+        if not self.encKey:
+            self.set_encKey()
         self.set_headers()
 
-    def set_mcode(self):
+    def set_encKey(self):
         target_url = 'http://webapi.cninfo.com.cn/api/stock/p_public0001'
-        header_key = 'mcode'
+        header_key = 'Accept-EncKey'
         entry_url = 'http://webapi.cninfo.com.cn/#/dataBrowse'
-        self.mcode = get_request_header_key(
+        self.encKey = get_request_header_key(
             entry_url, target_url, header_key)
-        print(self.mcode, 'mcode')
-        return self.mcode
+        print(self.encKey, 'encKey')
+        return self.encKey
     
     def set_headers(self):
         self.headers = {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
             'Origin': 'https://webapi.cninfo.com.cn',
             'Referer': 'http://webapi.cninfo.com.cn/',
-            'mcode': self.mcode
+            'Accept-EncKey': self.encKey
         }
     
     def get_stocks_by_industry(self, industry_code):
@@ -53,6 +53,7 @@ class ApiCninfo(BaseApiConfig):
         try:
             if res.status_code == 200:
                 res_json = res.json()
+                print("res_json", res_json)
                 if res_json.get('resultcode') == 401:
                     print('res_json', res_json) # 可能出现图片验证,这时候上网页上验证完即可
                     if '请进行图片验证' in res_json.get('resultmsg'):

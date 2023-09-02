@@ -12,11 +12,24 @@ import time
 import json
 import logging
 from threading import Thread, Lock
+from functools import wraps
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from utils.file_op import write_fund_json_data
 
+# %matplotlib inline
+
+def timeit(func):
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        print(f'Function {func.__name__}{args} {kwargs} Took {total_time:.4f} seconds')
+        return result
+    return timeit_wrapper
 
 def get_symbol_by_code(stock_code):
     """

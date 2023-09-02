@@ -49,6 +49,8 @@ class StockInsert(BaseSqlModel):
         snowflaw_id = self.IdWorker.get_id()
         stock_sql_insert = self.generate_insert_sql(
             stock_dict, 'stock_industry', ['id', 'code'])
+        # print('sql', stock_sql_insert)
+        # print('value', stock_dict.values())
         self.cursor.execute(stock_sql_insert,
                             tuple([snowflaw_id, *stock_dict.values()]))
         self.connect.commit()
@@ -90,8 +92,8 @@ class StockInsert(BaseSqlModel):
             'index_code': '',
             'type': '',
             'company': '',
-            'found_date': '',
-            'delist_date': '',
+            # 'found_date': '',
+            # 'delist_date': '',
             'market': ''
         }# 保持与sq表l设计顺序一致
         etf_sql_insert = self.generate_insert_sql(

@@ -10,7 +10,7 @@ Copyright (c) 2022 Camel Lu
 import os
 import sys
 sys.path.append(os.getcwd() + '/')
-
+from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import registry
 from config.env import env_db_host, env_db_name, env_db_user, env_db_password, env_db_port
@@ -34,6 +34,13 @@ def get_orm_base():
     if _global_base == None:
         _global_base = Base
     return _global_base
+
+_global_session = None
+def get_session():
+    global _global_session
+    if _global_session == None:
+        _global_session = Session(get_engine())
+    return _global_session
 
 if __name__ == '__main__':
     engine1 = get_engine()
