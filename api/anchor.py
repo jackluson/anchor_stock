@@ -9,10 +9,10 @@ Copyright (c) 2022 Camel Lu
 import sys
 import os
 sys.path.append(os.getcwd() + '/')
-from base.base_api_config import BaseApiConfig
+from base.base_api import BaseApi
 import requests
 
-class AnchorApi(BaseApiConfig):
+class AnchorApi(BaseApi):
     def __init__(self):
         super().__init__()
         self.base_url = 'http://127.0.0.1:5000/api'

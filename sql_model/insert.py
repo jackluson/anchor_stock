@@ -8,7 +8,6 @@ Author: luxuemin2108@gmail.com
 Copyright (c) 2021 Camel Lu
 '''
 
-from db.connect import connect
 from utils.index import lock_process
 from .base import BaseSqlModel
 from lib.mysnowflake import IdWorker

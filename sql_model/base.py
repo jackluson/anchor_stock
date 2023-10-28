@@ -7,8 +7,7 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2022 Camel Lu
 '''
-from db.connect import connect
-
+from infra.db.connect import connect
 class BaseSqlModel(object):
     def __init__(self):
         connect_instance = connect()

@@ -21,7 +21,7 @@ from controller.stock_valuation_calculate import stock_valuation_calculate
 from controller.asset_calculator import AssetCalculator
 from controller.asset_calculator_st import AssetCalculatorSt
 from controller.backtest_st_stock import backtest_st_stock
-from controller.wglh import Wglh
+from controller.save_value_level import SaveValueLevel
 from controller.reversal_maxdrawdown import DrawdownCalculator, BatchDrawdownList, IndicatorCalculator
 from controller.stock_profile import store_stock_proile
 
@@ -45,6 +45,8 @@ def bootstrap_stock_daily_scheduler():
     )
     scheduler.start()
 
+#2824+41+1685+44+225+561
+#4049+85+1130+4+114
 
 def main():
     input_value = int(input("请输入下列序号执行操作:\n \
@@ -78,7 +80,7 @@ def main():
 
             store_stock_daily()  # 执行股票每天变动信息入库
         elif select == 4:
-            Wglh().crawler()
+            SaveValueLevel().crawler()
         else:
             print('输入有误')
     elif input_value == 3:
