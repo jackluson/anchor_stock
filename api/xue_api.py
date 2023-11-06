@@ -20,6 +20,8 @@ from utils.index import get_symbol_by_code, get_request_header_key
 
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from infra.api.snowball import ApiSnowBall
+from infra.logger.logger import logger
 
 session = requests.Session()
 retry = Retry(connect=3, backoff_factor=0.5)
@@ -41,8 +43,10 @@ indictor_key_map = {
 }
 
 class ApiXueqiu(BaseApi):
+    infraSnowBallApi: ApiSnowBall = None
     def __init__(self):
         super().__init__()
+        self.infraSnowBallApi = ApiSnowBall()
         self.xue_qiu_cookie = os.getenv('xue_qiu_cookie')
         print("self.xue_qiu_cookie", self.xue_qiu_cookie)
         if not self.xue_qiu_cookie:
@@ -54,70 +58,49 @@ class ApiXueqiu(BaseApi):
             self.xue_qiu_cookie = xue_qiu_cookie
         self.set_client_headers()
 
-    def get_special_stock_quote(self, code, date=None):
-        symbol = get_symbol_by_code(code)
-        if not date:
-            date = time.strftime("%Y-%m-%d", time.localtime(time.time()))
-        dir = './archive_data/json/xueqiu/' + symbol + '/'
-        file_name_path = dir + date + '.json'
-        if os.path.exists(file_name_path):
-            res_json = self.get_data_from_json(file_name_path)
-        else:
-            url = "https://stock.xueqiu.com/v5/stock/quote.json?symbol={0}&extend=detail".format(
-                symbol)
-            # headers = self.get_client_headers()
-            res = session.get(url, headers=self.headers)
-            try:
-                if res.status_code == 200:
-                    res_json = res.json()
-                else:
-                    print('res异常', res)
-            except:
-                raise('中断')
-        data = res_json['data'].get('quote')
-        data_others = res_json['data'].get('others')
-        time_format = time.strftime(
-            "%Y-%m-%d", time.localtime(data['timestamp']/1000))
-        # 数据存档
-        dir = './archive_data/json/xueqiu/' + symbol + '/'
-        file_name = time_format + '.json'
-        write_fund_json_data(res_json, file_name,  dir)
-        #print("time_format", time_format)
+    def get_stock_quote(self, code):
+        data = self.infraSnowBallApi.get_stock_quote(code)
+        data_quote = data.get('quote')
+        # 有些股票在新三板停牌后，再其他板块还没上市 比如并行科技(NQ:839493)，这个时候股票代码是NQ开头
+        if not data_quote:
+            logger.info(f'code:{code}')
+            return None
+        data_others = data.get('others')
         stock_daily_dict = {
-            'code': data['code'],
-            'status': data['status'],
-            'name': data['name'],
-            'exchange': data['exchange'],
-            'timestamp': time.strftime("%Y-%m-%d", time.localtime(data['timestamp']/1000)),
-            'price': data['current'],
-            'open_price': data['open'],
-            'limit_up_price': data['limit_up'],
-            'limit_low_price': data['limit_down'],
-            'avg_price': data['avg_price'],
-            'last_close_price': data['last_close'],
-            'amplitude': data['amplitude'],
-            'turnover_rate': data['turnover_rate'],
-            'low52w': data['low52w'],
-            'high52w': data['high52w'],
-            'pb': data['pb'],
-            'pe_ttm': data['pe_ttm'],
-            'pe_lyr': data['pe_lyr'],
-            'pe_forecast': data['pe_forecast'],
-            'amount': data['amount'],
-            'volume': data['volume'],
-            'volume_ratio': data['volume_ratio'],
+            'code': data_quote['code'],
+            'status': data_quote['status'],
+            'name': data_quote['name'],
+            'exchange': data_quote['exchange'],
+            'timestamp': time.strftime("%Y-%m-%d", time.localtime(data_quote['timestamp']/1000)),
+            'price': data_quote['current'],
+            'open_price': data_quote['open'],
+            'limit_up_price': data_quote['limit_up'],
+            'limit_low_price': data_quote['limit_down'],
+            'avg_price': data_quote['avg_price'],
+            'last_close_price': data_quote['last_close'],
+            'amplitude': data_quote['amplitude'],
+            'turnover_rate': data_quote['turnover_rate'],
+            'low52w': data_quote['low52w'],
+            'high52w': data_quote['high52w'],
+            'pb': data_quote['pb'],
+            'pe_ttm': data_quote['pe_ttm'],
+            'pe_lyr': data_quote['pe_lyr'],
+            'pe_forecast': data_quote['pe_forecast'],
+            'amount': data_quote['amount'],
+            'volume': data_quote['volume'],
+            'volume_ratio': data_quote.get('volume_ratio'),
             'pankou_ratio': data_others['pankou_ratio'],
-            'goodwill_in_net_assets': data['goodwill_in_net_assets'],
-            'float_shares': data['float_shares'],
-            'total_shares': data['total_shares'],
-            'float_market_capital': data['float_market_capital'],
-            'market_capital': data['market_capital'],
-            'eps': data['eps'],
-            'navps': data['navps'],
-            'dividend': data['dividend'],
-            'dividend_yield': data['dividend_yield'],
-            'percent': data['percent'],
-            'current_year_percent': data['current_year_percent'],
+            'goodwill_in_net_assets': data_quote.get('goodwill_in_net_assets'),
+            'float_shares': data_quote['float_shares'],
+            'total_shares': data_quote['total_shares'],
+            'float_market_capital': data_quote['float_market_capital'],
+            'market_capital': data_quote['market_capital'],
+            'eps': data_quote['eps'],
+            'navps': data_quote['navps'],
+            'dividend': data_quote['dividend'],
+            'dividend_yield': data_quote['dividend_yield'],
+            'percent': data_quote['percent'],
+            'current_year_percent': data_quote['current_year_percent'],
         }
         return stock_daily_dict
 
@@ -356,7 +339,7 @@ class ApiXueqiu(BaseApi):
                 etf_info['delist_date'] = td.span.text
         etf_info['indictor'] = indictor_data
         return etf_info
-    
+
     def get_stock_profile_info(self, code):
         """ 获取公司简介信息
         """

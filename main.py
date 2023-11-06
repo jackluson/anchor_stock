@@ -68,7 +68,7 @@ def main():
             1.“行业个股”\n \
             2.“个股简介”\n \
             3.“股票日更”\n \
-            4.“温度”\n \
+            4.“股票PE、PB数据”\n \
         输入："))
         if select == 1:
             store_stock_industry()  # 执行行业股票信息入库
@@ -78,9 +78,10 @@ def main():
             logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                             filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
 
+            # target_date = '2023-10-27'
             store_stock_daily()  # 执行股票每天变动信息入库
         elif select == 4:
-            SaveValueLevel().crawler()
+            SaveValueLevel().save()
         else:
             print('输入有误')
     elif input_value == 3:
