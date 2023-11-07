@@ -27,8 +27,8 @@ class StockQuery(BaseSqlModel):
         results = self.cursor.fetchall()
         return results
 
-    def query_all_stock(self, date=None):
-        return self.infra_stock_query.query_all_stock(date=date)
+    def query_all_stock(self, date=None, *, exclude_table = 'stock_daily_info', date_key = 'timestamp'):
+        return self.infra_stock_query.query_all_stock(date=date, exclude_table=exclude_table, date_key=date_key)
 
     def query_stock_with_st(self, date=None):
         query_stock_sql = "SELECT t.stock_code, t.stock_name, t.industry_name_third, t1.org_name, t1.actual_controller, t1.classi_name, t1.main_operation_business FROM stock_industry as t \

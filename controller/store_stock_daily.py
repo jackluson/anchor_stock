@@ -18,17 +18,16 @@ from sql_model.insert import StockInsert
 
 
 def store_stock_daily(target_date=None):
-    if target_date and type(target_date) is not datetime:
-        raise TypeError(
-            'target_date must be a datetime.datetime, not a %s' % type(target_date))
-    elif target_date:
-        target_date = datetime.strftime(target_date, '%Y-%m-%d')
+    # if target_date and type(target_date) is not datetime:
+    #     raise TypeError(
+    #         'target_date must be a datetime.datetime, not a %s' % type(target_date))
     if target_date == None:
         target_date = time.strftime('%Y-%m-%d', time.localtime())
     each_query = StockQuery()
     each_insert = StockInsert()
     each_api = ApiXueqiu()
     all_stock = each_query.query_all_stock(target_date)
+    print("target_date", target_date)
     count = len(all_stock)
     print("count", count)
 
@@ -41,16 +40,19 @@ def store_stock_daily(target_date=None):
             stock = all_stock[index]
             stock_code = stock.get('stock_code')
             #print("stock_code", index, stock_code)
-            stock_daily_info_dict = each_api.get_special_stock_quote(
-                stock_code, target_date)
+            stock_daily_info_dict = each_api.get_stock_quote(
+                stock_code)
             # status = 0 未上市状态
-            if stock_daily_info_dict.get('status') == 0:
+            if not stock_daily_info_dict or stock_daily_info_dict.get('status') == 0:
                 print("stock_daily_info_dict", stock_daily_info_dict)
+                continue
+            if stock_daily_info_dict.get('timestamp') != target_date:
+                print("timestamp", stock_daily_info_dict.get('timestamp'), stock_code)
                 continue
             each_insert.insert_stock_daily_data(stock_daily_info_dict)
         line = f'结束：爬取时间: {target_date} 个数数量: {end-start}(从{start}到{end})'
         logging.info(line)
-    bootstrap_thread(crawlData, count, 4)
+    bootstrap_thread(crawlData, count, 8)
     exit()
 
 

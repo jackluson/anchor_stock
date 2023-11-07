@@ -14,6 +14,7 @@ from sqlalchemy.dialects.mysql import insert
 from db.engine import get_engine, get_orm_base, get_session
 
 ORM_Base = get_orm_base()
+engine = get_engine()
 
 prefix = ''
 

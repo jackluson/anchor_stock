@@ -53,7 +53,6 @@ class ApiCninfo(BaseApi):
         try:
             if res.status_code == 200:
                 res_json = res.json()
-                print("res_json", res_json)
                 if res_json.get('resultcode') == 401:
                     print('res_json', res_json) # 可能出现图片验证,这时候上网页上验证完即可
                     if '请进行图片验证' in res_json.get('resultmsg'):

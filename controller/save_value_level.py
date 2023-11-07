@@ -39,6 +39,63 @@ class SaveValueLevel():
         # self.travel()
         # self.output()
         self.crawl()
+    def handle_item(self, index):
+        stock = self.all_stock[index]
+        stock_code = stock.get('stock_code')
+        info = {
+            'code': stock_code,
+            'name': stock.get('stock_name'),
+            'date': self.cur_date,
+        }
+        # wglh没有这些股票数据
+        if bool(re.search("^(2|4|8|9)\d{5}$", stock_code)) or stock_code in self.ignore_codes:
+            return None
+        symbol = get_symbol_by_code(stock_code)
+        value_levels = self.api.get_pe_pb_levels_from_history(symbol=symbol)
+        if value_levels == None:
+            return None
+        pb_info = value_levels.get('pb')
+        pe_info = value_levels.get('pe')
+        pe_koufei_info = value_levels.get('pe_koufei')
+        
+        info['pb'] = self.format(pb_info.get('value'))
+        info['pb_mid'] = pb_info.get('median_10year')
+        info['pb_mid_1'] = pb_info.get('median_1year')
+        info['pb_mid_3'] = pb_info.get('median_3year')
+        info['pb_mid_5'] = pb_info.get('median_5year')
+        info['pb_mid_all'] = pb_info.get('median_all')
+
+        info['pb_percent'] = pb_info.get('percent_10year')
+        info['pb_percent_1'] = pb_info.get('percent_1year')
+        info['pb_percent_3'] = pb_info.get('percent_3year')
+        info['pb_percent_5'] = pb_info.get('percent_5year')
+        info['pb_percent_all'] = pb_info.get('percent_all')
+
+        info['pe'] = self.format(pe_info.get('value'))
+        info['pe_mid'] = pe_info.get('median_10year')
+        info['pe_mid_1'] = pe_info.get('median_1year')
+        info['pe_mid_3'] = pe_info.get('median_3year')
+        info['pe_mid_5'] = pe_info.get('median_5year')
+        info['pe_mid_all'] = pe_info.get('median_all')
+
+        info['pe_percent'] = pe_info.get('percent_10year')
+        info['pe_percent_1'] = pe_info.get('percent_1year')
+        info['pe_percent_3'] = pe_info.get('percent_3year')
+        info['pe_percent_5'] = pe_info.get('percent_5year')
+        info['pe_percent_all'] = pe_info.get('percent_all')
+        
+        info['pe_koufei'] = self.format(pe_koufei_info.get('value'))
+        info['pe_koufei_mid'] = pe_koufei_info.get('median_10year')
+        info['pe_koufei_mid_1'] = pe_koufei_info.get('median_1year')
+        info['pe_koufei_mid_3'] = pe_koufei_info.get('median_3year')
+        info['pe_koufei_mid_5'] = pe_koufei_info.get('median_5year')
+        info['pe_koufei_mid_all'] = pe_koufei_info.get('median_all')
+        info['pe_koufei_percent'] = pe_koufei_info.get('percent_10year')
+        info['pe_koufei_percent_1'] = pe_koufei_info.get('percent_1year')
+        info['pe_koufei_percent_3'] = pe_koufei_info.get('percent_3year')
+        info['pe_koufei_percent_5'] = pe_koufei_info.get('percent_5year')
+        info['pe_koufei_percent_all'] = pe_koufei_info.get('percent_all')
+        return info
     def crawl(self):
         all_stock = self.all_stock
         def crawlData(start, end):
@@ -46,65 +103,13 @@ class SaveValueLevel():
             logger.info(line)
             save_info_list = []
             for index in range(start, end):
-                if not index % 50 and len(save_info_list) > 0:
+                if not index % 100 and len(save_info_list) > 0:
                     print('index', index)
                     Stock_PE_PB_Model.bulk_save(save_info_list)
                     save_info_list = []
-                stock = all_stock[index]
-                save_info = {
-                    'code': stock.get('stock_code'),
-                    'name': stock.get('stock_name'),
-                    'date': self.cur_date,
-                }
-                stock_code = stock.get('stock_code')
-                # wglh没有这些股票数据
-                if bool(re.search("^(2|4|8|9)\d{5}$", stock_code)) or stock_code in self.ignore_codes:
-                    continue
-                symbol = get_symbol_by_code(stock_code)
-                value_levels = self.api.get_pe_pb_levels_from_history(symbol=symbol)
-                pb_info = value_levels.get('pb')
-                pe_info = value_levels.get('pe')
-                pe_koufei_info = value_levels.get('pe_koufei')
-                
-                save_info['pb'] = self.format(pb_info.get('value'))
-                save_info['pb_mid'] = pb_info.get('median_10year')
-                save_info['pb_mid_1'] = pb_info.get('median_1year')
-                save_info['pb_mid_3'] = pb_info.get('median_3year')
-                save_info['pb_mid_5'] = pb_info.get('median_5year')
-                save_info['pb_mid_all'] = pb_info.get('median_all')
-
-                save_info['pb_percent'] = pb_info.get('percent_10year')
-                save_info['pb_percent_1'] = pb_info.get('percent_1year')
-                save_info['pb_percent_3'] = pb_info.get('percent_3year')
-                save_info['pb_percent_5'] = pb_info.get('percent_5year')
-                save_info['pb_percent_all'] = pb_info.get('percent_all')
-
-                save_info['pe'] = self.format(pe_info.get('value'))
-                save_info['pe_mid'] = pe_info.get('median_10year')
-                save_info['pe_mid_1'] = pe_info.get('median_1year')
-                save_info['pe_mid_3'] = pe_info.get('median_3year')
-                save_info['pe_mid_5'] = pe_info.get('median_5year')
-                save_info['pe_mid_all'] = pe_info.get('median_all')
-
-                save_info['pe_percent'] = pe_info.get('percent_10year')
-                save_info['pe_percent_1'] = pe_info.get('percent_1year')
-                save_info['pe_percent_3'] = pe_info.get('percent_3year')
-                save_info['pe_percent_5'] = pe_info.get('percent_5year')
-                save_info['pe_percent_all'] = pe_info.get('percent_all')
-               
-                save_info['pe_koufei'] = self.format(pe_koufei_info.get('value'))
-                save_info['pe_koufei_mid'] = pe_koufei_info.get('median_10year')
-                save_info['pe_koufei_mid_1'] = pe_koufei_info.get('median_1year')
-                save_info['pe_koufei_mid_3'] = pe_koufei_info.get('median_3year')
-                save_info['pe_koufei_mid_5'] = pe_koufei_info.get('median_5year')
-                save_info['pe_koufei_mid_all'] = pe_koufei_info.get('median_all')
-                save_info['pe_koufei_percent'] = pe_koufei_info.get('percent_10year')
-                save_info['pe_koufei_percent_1'] = pe_koufei_info.get('percent_1year')
-                save_info['pe_koufei_percent_3'] = pe_koufei_info.get('percent_3year')
-                save_info['pe_koufei_percent_5'] = pe_koufei_info.get('percent_5year')
-                save_info['pe_koufei_percent_all'] = pe_koufei_info.get('percent_all')
-                
-                save_info_list.append(save_info)
+                info = self.handle_item(index)
+                if info:
+                    save_info_list.append(info)
             Stock_PE_PB_Model.bulk_save(save_info_list)
             line = f'结束：爬取时间: {self.cur_date} 个数数量: {end-start}(从{start}到{end})'
             logger.info(line)
@@ -127,83 +132,12 @@ class SaveValueLevel():
         all_stock = self.all_stock
         start_index = 0
         for index in range(start_index, len(all_stock)):
-            stock = all_stock[index]
             if index % 100 == 0:
                 print('index', index)
-            info = {
-                **stock
-            }
-            print("info", info)
-            stock_code = stock.get('stock_code')
-            # wglh没有这些股票数据
-            if bool(re.search("^(2|4|8|9)\d{5}$", stock_code)) or stock_code in self.ignore_codes:
-                continue
-            symbol = get_symbol_by_code(stock_code)
-            value_levels = self.api.get_pe_pb_levels_from_history(symbol=symbol)
-            pb_info = value_levels.get('pb')
-            pe_info = value_levels.get('pe')
-            pe_koufei_info = value_levels.get('pe_koufei')
-            
-
-            info['pb'] = pb_info.get('median_10year') #默认十年
-            info['pb_5'] = pb_info.get('median_5year')
-            info['pb_all'] = pb_info.get('median_all')
-            
-            info['pb_temperature'] = pb_info.get('percent_10year')
-            info['pb_temperature_5'] = pb_info.get('percent_5year')
-            info['pb_temperature_all'] = pb_info.get('percent_all')
-            info['pe'] = pe_info.get('median_10year')
-            
-            info['pe_5'] = pe_info.get('median_5year')
-            info['pe_all'] = pe_info.get('median_all')
-            info['pe_temperature'] = pe_info.get('percent_10year')
-            info['pe_temperature_5'] = pe_info.get('percent_5year')
-            info['pe_temperature_all'] = pe_info.get('percent_all')
-            info['pe_koufei'] = pe_koufei_info.get('median_10year')
-            info['pe_koufei_5'] = pe_koufei_info.get('median_5year')
-            info['pe_koufei_all'] = pe_koufei_info.get('median_all')
-            info['pe_koufei_temperature'] = pe_koufei_info.get('percent_10year')
-            info['pe_koufei_temperature_5'] = pe_koufei_info.get('percent_5year')
-            info['pe_koufei_temperature_all'] = pe_koufei_info.get('percent_all')
-            stocks_info.append(info)
+            info = self.handle_item(index)
+            if info:
+                stocks_info.append(info)
         self.stocks_info = stocks_info
-    
-    def parse_html_script(self, *, symbol ):
-        html = self.api.get_history_html(symbol = symbol)
-        print("html", html)
-        soup = BeautifulSoup(html, "lxml")
-        data = soup.find_all('script', type='text/javascript')
-        print("data", data)
-        script_content = data[-1].string
-        json_string = script_content.split('var positions = ')[1]
-        json_string = json_string.split('; ')[0]
-        json_string = json_string.replace('\'', '\"')
-        positions = json.loads(json_string)
-        return {
-            'positions': positions
-        }
-        # context = js2py.EvalJs()
-        # execute_code = """
-        #         var $ = function (selector) {
-        #             return {
-        #                 children: function () {
-        #                     return {
-        #                         click(){
-
-        #                         }
-        #                     }
-        #                 }
-        #             }
-        #         };
-        # """ + script_content
-        # context.execute(execute_code)
-        # positions = context.positions
-        pb = positions.pb
-        pe = positions.pe
-        pe_koufei = positions.pe_koufei
-        print(pb)
-        print("pe", pe)
-        print("pe_koufei", pe_koufei)
 
     def output(self):
         output_dir = f'{os.getcwd()}/outcome/pe_pb/'
@@ -214,4 +148,4 @@ class SaveValueLevel():
 # wglh = Wglh()
 
 if __name__ == '__main__':
-    SaveValueLevel(date='2023-11-03').save()
+    SaveValueLevel().save()

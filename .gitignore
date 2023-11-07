@@ -4,3 +4,9 @@ __pycache__/
 
 archive_data/
 log/
+scripts/
+tmp/
+.DS_Store
+outcome/
+data/
+.env.fund
