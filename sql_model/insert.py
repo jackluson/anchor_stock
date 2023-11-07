@@ -54,6 +54,7 @@ class StockInsert(BaseSqlModel):
                             tuple([snowflaw_id, *stock_dict.values()]))
         self.connect.commit()
     
+    @lock_process
     def insert_stock_profile(self, profile_dict):
         # 入库股票简介数据
         snowflaw_id = self.IdWorker.get_id()
