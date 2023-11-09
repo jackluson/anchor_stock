@@ -116,7 +116,6 @@ class SaveValueLevel():
         count = len(all_stock)
         print("count", count)
         bootstrap_thread(crawlData, count, 12)
-        pass
     def get_stock_list(self):
         self.all_stock = self.query.query_all_stock(date=self.cur_date, exclude_table='stock_pe_pb', date_key='date')
     

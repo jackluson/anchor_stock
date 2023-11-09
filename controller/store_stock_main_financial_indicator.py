@@ -13,7 +13,7 @@ from sql_model.insert import StockInsert
 
 
 def store_stock_main_financial_indicator():
-    count = 41
+    count = 4 #爬去季度数量
     each_insert = StockInsert()
     each_query = StockQuery()
     all_stock = each_query.query_all_stock()

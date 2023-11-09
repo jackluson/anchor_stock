@@ -21,6 +21,7 @@ def store_stock_industry():
 
     industry_data = each_query.query_industry_data()
     exist_all_stock = each_query.query_all_stock()
+    print("exist_all_stock", len(exist_all_stock))
     cur_all_stock = []
     print('行业数量:', len(industry_data))
     start_index = 0

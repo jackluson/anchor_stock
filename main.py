@@ -17,7 +17,6 @@ from controller.store_industry import store_industry
 from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
-from controller.stock_valuation_calculate import stock_valuation_calculate
 from controller.asset_calculator import AssetCalculator
 from controller.asset_calculator_st import AssetCalculatorSt
 from controller.backtest_st_stock import backtest_st_stock
@@ -27,9 +26,11 @@ from controller.stock_profile import store_stock_proile
 
 
 def store_stock_industry_and_daily():
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                        filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
     store_stock_industry()  # 执行行业股票信息入库
-    #target_date = datetime.strptime('2021-07-08','%Y-%m-%d')
     store_stock_daily()  # 执行股票每天变动信息入库
+    SaveValueLevel().save()
 
 
 def bootstrap_stock_daily_scheduler():
@@ -40,58 +41,39 @@ def bootstrap_stock_daily_scheduler():
         store_stock_industry_and_daily,
         trigger='cron',
         day_of_week='mon-fri',
-        hour=17,
+        hour=14,
         minute=00,
     )
     scheduler.start()
 
-#2824+41+1685+44+225+561
-#4049+85+1130+4+114
-
 def main():
     input_value = int(input("请输入下列序号执行操作:\n \
-        1.“行业” \n \
-        2.“个股信息”\n \
-        3.“定时日更个股”\n \
-        4.“财务指标”\n \
-        5.“A股估值”\n \
-        7.市场指数/ETF近期收益计算\n \
-        8.ST股票近期收益计算\n \
-        9.回撤ST股票摘帽收益计算\n \
+        1.“定时日更”\n \
+        2.“股票日更-行情&PE、PB”\n \
+        3.“行业个股及简介更新”\n \
+        4.“行业” \n \
+        5.“财务指标”\n \
+        6.市场指数/ETF近期收益计算\n \
+        7.回撤ST股票摘帽收益计算\n \
     输入："))
     if input_value == 1:
+        bootstrap_stock_daily_scheduler()
+    elif input_value == 2:
+        logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                        filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
+
+        # target_date = '2023-10-27'
+        store_stock_daily()  # 执行股票每天变动信息入库
+        SaveValueLevel().save()
+    elif input_value == 3:
+        store_stock_industry() #执行行业股票信息入库
+        store_stock_proile()  # 执行股票简介信息入库
+    elif input_value == 4:
         os.system('sh scripts/industry.sh')
         time.sleep(3)
-        store_industry()  # 执行申万行业信息入库
-    elif input_value == 2:
-        select = int(input("请再输入下列序号执行操作:\n \
-            1.“行业个股”\n \
-            2.“个股简介”\n \
-            3.“股票日更”\n \
-            4.“股票PE、PB数据”\n \
-        输入："))
-        if select == 1:
-            store_stock_industry()  # 执行行业股票信息入库
-        elif select == 2:
-            store_stock_proile()  # 执行股票简介信息入库
-        elif select == 3:
-            logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                            filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
-
-            # target_date = '2023-10-27'
-            store_stock_daily()  # 执行股票每天变动信息入库
-        elif select == 4:
-            SaveValueLevel().save()
-        else:
-            print('输入有误')
-    elif input_value == 3:
-        # store_stock_industry_and_daily() #联合执行
-        bootstrap_stock_daily_scheduler()
-    elif input_value == 4:
-        store_stock_main_financial_indicator()  # 入库股票财报关键指标信息
     elif input_value == 5:
-        stock_valuation_calculate()  # 入库股票财报关键指标信息
-    elif input_value == 7:
+        store_stock_main_financial_indicator()  # 入库股票财报关键指标信息
+    elif input_value == 6:
         etf_gain = AssetCalculator({
             'is_year': 1,
             'count': 20,
@@ -109,24 +91,7 @@ def main():
             'freq': 'W',  # Y,Q,M,W,D
         })
         etf_gain.calculate().output()  # ETF收益计算
-    elif input_value == 8:
-        etf_gain = AssetCalculatorSt({
-            'is_year': 1,
-            'count': 20,
-            'day_10_before': 1,
-            'day_20_before': 1,
-            'day_30_before': 1,
-            'day_60_before': 1,
-            'type': 'st',  # index, etf, st
-            'markdown': 0
-        })
-        etf_gain.set_date({
-            'date': '2023-07-07',
-            'freq': 'W',  # Y,Q,M,W,D
-        })
-        # etf_gain.calculate().ouputRank() # ST收益涨跌板计算
-        etf_gain.calculate().output_all() # 全部ST收益计算
-    elif input_value == 9:
+    elif input_value == 7:
         backtest_st_stock()
 if __name__ == '__main__':
     main()

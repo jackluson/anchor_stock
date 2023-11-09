@@ -53,7 +53,6 @@ def store_stock_daily(target_date=None):
         line = f'结束：爬取时间: {target_date} 个数数量: {end-start}(从{start}到{end})'
         logging.info(line)
     bootstrap_thread(crawlData, count, 8)
-    exit()
 
 
 if __name__ == '__main__':
