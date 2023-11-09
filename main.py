@@ -8,7 +8,6 @@ Author: luxuemin2108@gmail.com
 Copyright (c) 2021 Camel Lu
 '''
 import os
-import logging
 import time
 from datetime import datetime
 from multiprocessing import Process, Lock
@@ -26,9 +25,7 @@ from controller.stock_profile import store_stock_proile
 
 
 def store_stock_industry_and_daily():
-    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                        filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
-    store_stock_industry()  # 执行行业股票信息入库
+    # store_stock_industry()  # 执行行业股票信息入库
     store_stock_daily()  # 执行股票每天变动信息入库
     SaveValueLevel().save()
 
@@ -41,7 +38,7 @@ def bootstrap_stock_daily_scheduler():
         store_stock_industry_and_daily,
         trigger='cron',
         day_of_week='mon-fri',
-        hour=14,
+        hour=16,
         minute=00,
     )
     scheduler.start()
@@ -59,9 +56,6 @@ def main():
     if input_value == 1:
         bootstrap_stock_daily_scheduler()
     elif input_value == 2:
-        logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                        filename='log/stock_daily_info.log',  filemode='a', level=logging.INFO)
-
         # target_date = '2023-10-27'
         store_stock_daily()  # 执行股票每天变动信息入库
         SaveValueLevel().save()

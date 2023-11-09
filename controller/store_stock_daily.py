@@ -8,13 +8,12 @@ Author: luxuemin2108@gmail.com
 Copyright (c) 2021 Camel Lu
 '''
 import time
-from datetime import datetime
-import logging
 
 from utils.index import bootstrap_thread
 from api.xue_api import ApiXueqiu
 from sql_model.query import StockQuery
 from sql_model.insert import StockInsert
+from infra.logger.logger import logger
 
 
 def store_stock_daily(target_date=None):
@@ -33,7 +32,7 @@ def store_stock_daily(target_date=None):
 
     def crawlData(start, end):
         line = f'开始爬取：爬取时间: {target_date} 个数数量: {end-start}(从{start}到{end})'
-        logging.info(line)
+        logger.info(line)
         for index in range(start, end):
             if not index % 100:
                 print('index', index)
@@ -44,14 +43,18 @@ def store_stock_daily(target_date=None):
                 stock_code)
             # status = 0 未上市状态
             if not stock_daily_info_dict or stock_daily_info_dict.get('status') == 0:
-                print("stock_daily_info_dict", stock_daily_info_dict)
+                logger.info(stock_daily_info_dict)
+                logger.info({'stock_code': stock_code})
+
                 continue
             if stock_daily_info_dict.get('timestamp') != target_date:
-                print("timestamp", stock_daily_info_dict.get('timestamp'), stock_code)
+                logger.info(stock_daily_info_dict.get('timestamp'))
+                logger.info({'stock_code': stock_code})
+
                 continue
             each_insert.insert_stock_daily_data(stock_daily_info_dict)
         line = f'结束：爬取时间: {target_date} 个数数量: {end-start}(从{start}到{end})'
-        logging.info(line)
+        logger.info(line)
     bootstrap_thread(crawlData, count, 8)
 
 
