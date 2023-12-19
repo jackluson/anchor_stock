@@ -10,12 +10,12 @@ Copyright (c) 2022 Camel Lu
 import logging
 import time 
 from sql_model.query import StockQuery
-from api.xue_api import ApiXueqiu
 from sql_model.insert import StockInsert
 from utils.index import bootstrap_thread
+from infra.api.snowball import ApiSnowBall
 
 def store_stock_proile():
-    each_api = ApiXueqiu()
+    each_api = ApiSnowBall()
     each_insert = StockInsert()
     each_query = StockQuery()
     all_stock = each_query.query_all_stock()
@@ -29,7 +29,6 @@ def store_stock_proile():
             stock = all_stock[index]
             code = stock.get('stock_code')
             info = each_api.get_stock_profile_info(code)
-            # print("i÷nfo", info)
             if not info or not info['org_short_name_cn']:
                 continue
             time_local =  time.localtime(info['established_date']/1000) if info['established_date'] else None
@@ -54,7 +53,7 @@ def store_stock_proile():
             each_insert.insert_stock_profile(profile_dict)
         line = f'结束:从{start}到{end}'
         logging.info(line)
-    bootstrap_thread(crawlData, len(all_stock), 12)
+    bootstrap_thread(crawlData, len(all_stock), 10)
     exit()
 
 if __name__ == '__main__':

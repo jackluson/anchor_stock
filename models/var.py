@@ -11,7 +11,7 @@ import sys
 sys.path.append('./')
 from sqlalchemy import Column, text, DateTime, func
 from sqlalchemy.dialects.mysql import insert
-from db.engine import get_engine, get_orm_base, get_session
+from infra.db.engine import get_engine, get_orm_base, get_session
 
 ORM_Base = get_orm_base()
 engine = get_engine()

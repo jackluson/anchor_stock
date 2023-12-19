@@ -48,14 +48,13 @@ class ApiXueqiu(BaseApi):
         super().__init__()
         self.infraSnowBallApi = ApiSnowBall()
         self.xue_qiu_cookie = os.getenv('xue_qiu_cookie')
-        print("self.xue_qiu_cookie", self.xue_qiu_cookie)
         if not self.xue_qiu_cookie:
             entry_url = 'https://xueqiu.com/'
-            host = 'xueqiu.com'
-            header_key = 'Cookie'
-            xue_qiu_cookie = get_request_header_key(
-                entry_url, host, header_key)
-            self.xue_qiu_cookie = xue_qiu_cookie
+            cookie_str = self.infraSnowBallApi.get_html(entry_url)
+            print("cookie_str", cookie_str)
+            # xue_qiu_cookie = get_request_header_key(
+            #     entry_url, host, header_key)
+            self.xue_qiu_cookie = cookie_str
         self.set_client_headers()
 
     def get_stock_quote(self, code):
@@ -339,32 +338,3 @@ class ApiXueqiu(BaseApi):
                 etf_info['delist_date'] = td.span.text
         etf_info['indictor'] = indictor_data
         return etf_info
-
-    def get_stock_profile_info(self, code):
-        """ 获取公司简介信息
-        """
-        symbol = get_symbol_by_code(code)
-        payload = {
-            'symbol': symbol.upper(),
-        }
-        url = "https://stock.xueqiu.com/v5/stock/f10/cn/company.json?symbol={symbol}".format(
-            **payload)
-        # headers = self.get_client_headers()
-        # print("headers", headers)
-        res = session.get(url, headers=self.headers)
-        try:
-            if res.status_code == 200:
-                res_json = res.json()
-                info = res_json.get('data').get('company')
-                if not info or not info['org_short_name_cn']:
-                    line = f'该{symbol}--没有简介信息'
-                    logging.warning(line)
-                return info
-            else:
-                print('请求异常', res, symbol)
-                line = f'该股票{symbol}{res}--api数据有误'
-                logging.error(line)
-                
-        except:
-            line = f'该股票{symbol}--api数据有误'
-            logging.error(line)

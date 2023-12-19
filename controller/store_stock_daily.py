@@ -17,6 +17,7 @@ from infra.logger.logger import logger
 
 
 def store_stock_daily(target_date=None):
+    print("target_date", target_date)
     # if target_date and type(target_date) is not datetime:
     #     raise TypeError(
     #         'target_date must be a datetime.datetime, not a %s' % type(target_date))

@@ -10,7 +10,7 @@ Copyright (c) 2021 Camel Lu
 
 from utils.index import lock_process
 from .base import BaseSqlModel
-from lib.mysnowflake import IdWorker
+from infra.lib.mysnowflake import IdWorker
 
 class StockInsert(BaseSqlModel):
     def __init__(self):

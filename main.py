@@ -9,39 +9,16 @@ Copyright (c) 2021 Camel Lu
 '''
 import os
 import time
-from datetime import datetime
-from multiprocessing import Process, Lock
-from apscheduler.schedulers.blocking import BlockingScheduler
-from controller.store_industry import store_industry
-from controller.store_stock_industry import store_stock_industry
 from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
 from controller.asset_calculator import AssetCalculator
-from controller.asset_calculator_st import AssetCalculatorSt
 from controller.backtest_st_stock import backtest_st_stock
 from controller.save_value_level import SaveValueLevel
 from controller.reversal_maxdrawdown import DrawdownCalculator, BatchDrawdownList, IndicatorCalculator
 from controller.stock_profile import store_stock_proile
+from task import bootstrap_stock_daily_scheduler
+from controller.store_stock_industry import store_stock_industry
 
-
-def store_stock_industry_and_daily():
-    # store_stock_industry()  # 执行行业股票信息入库
-    store_stock_daily()  # 执行股票每天变动信息入库
-    SaveValueLevel().save()
-
-
-def bootstrap_stock_daily_scheduler():
-    # 创建调度器：BlockingScheduler
-    scheduler = BlockingScheduler()
-    # 添加任务,时间间隔2S
-    scheduler.add_job(
-        store_stock_industry_and_daily,
-        trigger='cron',
-        day_of_week='mon-fri',
-        hour=16,
-        minute=00,
-    )
-    scheduler.start()
 
 def main():
     input_value = int(input("请输入下列序号执行操作:\n \
@@ -56,7 +33,7 @@ def main():
     if input_value == 1:
         bootstrap_stock_daily_scheduler()
     elif input_value == 2:
-        # target_date = '2023-10-27'
+        # target_date = '2023-11-24'
         store_stock_daily()  # 执行股票每天变动信息入库
         SaveValueLevel().save()
     elif input_value == 3:

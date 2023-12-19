@@ -9,8 +9,6 @@ Copyright (c) 2023 Camel Lu
 import os
 import re
 import time
-import json
-from bs4 import BeautifulSoup
 from utils.file_op import update_xlsx_file
 from utils.index import bootstrap_thread, get_symbol_by_code
 from infra.api.wglh import ApiWglh

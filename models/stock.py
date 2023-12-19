@@ -11,7 +11,7 @@ sys.path.append('.')
 
 from sqlalchemy import Table
 from models.var import ORM_Base, engine, Model
-from lib.mysnowflake import IdWorker
+from infra.lib.mysnowflake import IdWorker
 
 stock_profile_tablename = 'stock_profile'
 
