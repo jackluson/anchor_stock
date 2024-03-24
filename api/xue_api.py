@@ -22,6 +22,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from infra.api.snowball import ApiSnowBall
 from infra.logger.logger import logger
+from infra.config.parser import conf_parser
 
 session = requests.Session()
 retry = Retry(connect=3, backoff_factor=0.5)
@@ -47,14 +48,9 @@ class ApiXueqiu(BaseApi):
     def __init__(self):
         super().__init__()
         self.infraSnowBallApi = ApiSnowBall()
-        self.xue_qiu_cookie = os.getenv('xue_qiu_cookie')
-        if not self.xue_qiu_cookie:
-            entry_url = 'https://xueqiu.com/'
-            cookie_str = self.infraSnowBallApi.get_html(entry_url)
-            print("cookie_str", cookie_str)
-            # xue_qiu_cookie = get_request_header_key(
-            #     entry_url, host, header_key)
-            self.xue_qiu_cookie = cookie_str
+        self.snowball_cookie = conf_parser.snowball_cookie
+        if not self.snowball_cookie:
+            self.snowball_cookie = self.infraSnowBallApi.xue_qiu_cookie
         self.set_client_headers()
 
     def get_stock_quote(self, code):
@@ -124,7 +120,6 @@ class ApiXueqiu(BaseApi):
                 stock_quarter_financial_indicator_list = []
                 report_list = res_json.get('list')
                 for report_item in report_list:
-                    #print("report_item", report_item)
                     report_date = time.strftime(
                         "%Y-%m-%d", time.localtime(report_item.get('report_date')/1000))
                     report_publish_date = time.strftime(

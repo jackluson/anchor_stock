@@ -9,14 +9,12 @@ Copyright (c) 2021 Camel Lu
 '''
 import os
 import time
-from controller.store_stock_daily import store_stock_daily
 from controller.store_stock_main_financial_indicator import store_stock_main_financial_indicator
 from controller.asset_calculator import AssetCalculator
 from controller.backtest_st_stock import backtest_st_stock
-from controller.save_value_level import SaveValueLevel
 from controller.reversal_maxdrawdown import DrawdownCalculator, BatchDrawdownList, IndicatorCalculator
 from controller.stock_profile import store_stock_proile
-from task import bootstrap_stock_daily_scheduler
+from task import bootstrap_stock_daily_scheduler, store_stock_industry_and_daily
 from controller.store_stock_industry import store_stock_industry
 
 
@@ -33,9 +31,7 @@ def main():
     if input_value == 1:
         bootstrap_stock_daily_scheduler()
     elif input_value == 2:
-        # target_date = '2023-11-24'
-        store_stock_daily()  # 执行股票每天变动信息入库
-        SaveValueLevel().save()
+        store_stock_industry_and_daily()
     elif input_value == 3:
         store_stock_industry() #执行行业股票信息入库
         store_stock_proile()  # 执行股票简介信息入库

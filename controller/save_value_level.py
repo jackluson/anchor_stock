@@ -16,6 +16,7 @@ from infra.models.stock_pe_pb import Stock_PE_PB as Stock_PE_PB_Model
 from sql_model.query import StockQuery
 import pandas as pd
 from infra.logger.logger import logger
+from infra.config.parser import conf_parser
 
 
 class SaveValueLevel():
@@ -26,11 +27,7 @@ class SaveValueLevel():
     def __init__(self, *, date = None) -> None:
         self.api = ApiWglh()
         self.query = StockQuery()
-        if date == None:
-            self.cur_date =  time.strftime(
-            "%Y-%m-%d", time.localtime(time.time()))
-        else:
-            self.cur_date = date
+        self.cur_date = date if date else conf_parser.latest_data_day
         self.get_stock_list()
     def save(self):
         self.get_stock_list()
@@ -51,6 +48,7 @@ class SaveValueLevel():
         symbol = get_symbol_by_code(stock_code)
         value_levels = self.api.get_pe_pb_levels_from_history(symbol=symbol)
         if value_levels == None:
+            print('symbol', symbol, stock.get('stock_name'))
             return None
         pb_info = value_levels.get('pb')
         pe_info = value_levels.get('pe')
@@ -113,7 +111,8 @@ class SaveValueLevel():
             logger.info(line)
         count = len(all_stock)
         print("count", count)
-        bootstrap_thread(crawlData, count, 12)
+        # crawlData(0, count)
+        bootstrap_thread(crawlData, count, 8)
     def get_stock_list(self):
         self.all_stock = self.query.query_all_stock(date=self.cur_date, exclude_table='stock_pe_pb', date_key='date')
     

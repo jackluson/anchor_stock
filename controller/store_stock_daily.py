@@ -7,30 +7,27 @@ Author: luxuemin2108@gmail.com
 -----
 Copyright (c) 2021 Camel Lu
 '''
-import time
-
 from utils.index import bootstrap_thread
 from api.xue_api import ApiXueqiu
 from sql_model.query import StockQuery
 from sql_model.insert import StockInsert
 from infra.logger.logger import logger
+from infra.config.parser import conf_parser
 
 
 def store_stock_daily(target_date=None):
-    print("target_date", target_date)
     # if target_date and type(target_date) is not datetime:
     #     raise TypeError(
     #         'target_date must be a datetime.datetime, not a %s' % type(target_date))
     if target_date == None:
-        target_date = time.strftime('%Y-%m-%d', time.localtime())
+        target_date = conf_parser.latest_data_day
+    print("target_date", target_date)
     each_query = StockQuery()
     each_insert = StockInsert()
     each_api = ApiXueqiu()
     all_stock = each_query.query_all_stock(target_date)
-    print("target_date", target_date)
     count = len(all_stock)
-    print("count", count)
-
+    print("total:", count)
     def crawlData(start, end):
         line = f'开始爬取：爬取时间: {target_date} 个数数量: {end-start}(从{start}到{end})'
         logger.info(line)
