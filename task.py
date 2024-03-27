@@ -1,11 +1,12 @@
 from datetime import datetime
-
+import time
 from apscheduler.schedulers.blocking import BlockingScheduler
 from controller.store_stock_daily import store_stock_daily
 from controller.save_value_level import SaveValueLevel
 
 def store_stock_industry_and_daily():
     # store_stock_industry()  # 执行行业股票信息入库
+    target_date = time.strftime('%Y-%m-%d', time.localtime())
     store_stock_daily()  # 执行股票每天变动信息入库
     SaveValueLevel().save()
 
@@ -21,6 +22,7 @@ def bootstrap_stock_daily_scheduler():
         minute=30,
     )
     scheduler.start()
-    
+
 if __name__ == '__main__':
+    # store_stock_industry_and_daily()
     bootstrap_stock_daily_scheduler()

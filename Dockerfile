@@ -1,6 +1,6 @@
 #基础镜像
 # FROM python3.8.11-base:latest
-FROM python3.8.11-slim-base
+FROM anchor_stock_base
 
 LABEL description="A docker image for anchor_stock"
 
@@ -22,5 +22,4 @@ WORKDIR /anchor_stock
 
 # RUN apk add gcc musl-dev libffi-dev openssl-dev cargo
 # RUN pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
-RUN pip install beautifulsoup4==4.9.3
 CMD ["python", "-u", "task.py"]
