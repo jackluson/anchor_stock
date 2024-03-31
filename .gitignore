@@ -9,4 +9,5 @@ tmp/
 .DS_Store
 outcome/
 data/
+config.ini
 .env.fund
