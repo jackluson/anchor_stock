@@ -1,14 +1,14 @@
-curl -o industry.json 'http://webapi.cninfo.com.cn/api/sysapi/p_sysapi1016' \
+curl -o input/industry.json 'http://webapi.cninfo.com.cn/api/sysapi/p_sysapi1016' \
   -X 'POST' \
-  -H 'Connection: keep-alive' \
+  -H 'Proxy-Connection: keep-alive' \
   -H 'Content-Length: 0' \
   -H 'Accept: */*' \
   -H 'X-Requested-With: XMLHttpRequest' \
-  -H 'mcode: MTYzMDU5NDUyMw==' \
-  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36' \
+  -H 'Accept-EncKey: K46L1CnRqlkTrpi3joLAsQ==' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36' \
   -H 'Origin: http://webapi.cninfo.com.cn' \
   -H 'Referer: http://webapi.cninfo.com.cn/' \
-  -H 'Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en-CA;q=0.7,en;q=0.6,la;q=0.5' \
-  -H 'Cookie: routeId=.uc2; Hm_lvt_489bd07e99fbfc5f12cbb4145adb0a9b=1630594507; Hm_lpvt_489bd07e99fbfc5f12cbb4145adb0a9b=1630594507' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-US;q=0.7,en-CA;q=0.6,la;q=0.5' \
+  -H 'Cookie: JSESSIONID=8D289D1B99F5EA5D663D1B1DF8CC038D; routeId=.uc2; Hm_lvt_489bd07e99fbfc5f12cbb4145adb0a9b=1696864408; Hm_lpvt_489bd07e99fbfc5f12cbb4145adb0a9b=1698333804' \
   --compressed \
   --insecure

@@ -9,8 +9,9 @@ Copyright (c) 2020 Camel Lu
 import os
 import requests
 
-from utils.index import get_request_header_key
+# from utils.index import get_request_header_key
 from base.base_api import BaseApi
+from infra.patch.enckey.run import getResCode
 
 default_try_count = 3
 class ApiCninfo(BaseApi):
@@ -26,11 +27,12 @@ class ApiCninfo(BaseApi):
         self.set_headers()
 
     def set_encKey(self):
-        target_url = 'http://webapi.cninfo.com.cn/api/stock/p_public0001'
-        header_key = 'Accept-EncKey'
-        entry_url = 'http://webapi.cninfo.com.cn/#/dataBrowse'
-        self.encKey = get_request_header_key(
-            entry_url, target_url, header_key)
+        # target_url = 'http://webapi.cninfo.com.cn/api/stock/p_public0001'
+        # header_key = 'Accept-EncKey'
+        # entry_url = 'http://webapi.cninfo.com.cn/#/dataBrowse'
+        # self.encKey = get_request_header_key(
+        #     entry_url, target_url, header_key)
+        self.encKey = getResCode()
         print(self.encKey, 'encKey')
         return self.encKey
     

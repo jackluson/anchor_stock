@@ -13,10 +13,14 @@ import json
 import logging
 from threading import Thread, Lock
 from functools import wraps
-
+from selenium import webdriver
+import chromedriver_autoinstaller
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from utils.file_op import write_fund_json_data
 
 # %matplotlib inline
+chromedriver_autoinstaller.install()
+
 
 def timeit(func):
     @wraps(func)
@@ -45,8 +49,6 @@ def get_symbol_by_code(stock_code):
 
 
 def get_request_header_key(entry_url, host, request_header_key, mime_type="json"):
-    from selenium import webdriver
-    from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
     capabilities = DesiredCapabilities.CHROME
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument('--headless')
@@ -54,8 +56,8 @@ def get_request_header_key(entry_url, host, request_header_key, mime_type="json"
     chrome_options.binary_location = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     chrome_options.add_argument("--no-sandbox")
     # chrome_options.add_argument('--headless')
-    chrome_driver_binary = "/usr/local/bin/chromedriver"
-    driver = webdriver.Chrome(chrome_driver_binary, options=chrome_options,
+    # chrome_driver_binary = "/usr/local/bin/chromedriver"
+    driver = webdriver.Chrome(options=chrome_options,
                               desired_capabilities=capabilities,)
     driver.get(entry_url)
     logs_raw = driver.get_log("performance")
